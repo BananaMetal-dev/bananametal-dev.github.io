@@ -3,6 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="ページが見つかりません。トップページ、Apps、Musicへの導線を表示します。" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>ページが見つかりません | Banana Metal</title>
     <style>
       :root {
@@ -18,6 +20,9 @@
         display: grid;
         place-items: center;
         padding: 24px;
+        background:
+          radial-gradient(circle at top left, rgba(238, 174, 82, 0.38), transparent 34rem),
+          linear-gradient(135deg, #fff8ef 0%, #f3e7d8 48%, #efe2d2 100%);
       }
 
       main {
@@ -31,7 +36,7 @@
 
       h1 {
         margin: 0 0 16px;
-        font-size: clamp(2rem, 9vw, 4.5rem);
+        font-size: 4rem;
         line-height: 0.95;
       }
 
@@ -54,11 +59,35 @@
         text-decoration: none;
         background: #ffffff;
       }
+
+      a:focus-visible {
+        outline: 3px solid #201815;
+        outline-offset: 4px;
+      }
+
+      @media (max-width: 420px) {
+        body {
+          padding: 12px;
+        }
+
+        h1 {
+          font-size: 3rem;
+        }
+
+        nav,
+        a {
+          width: 100%;
+        }
+
+        a {
+          text-align: center;
+        }
+      }
     </style>
   </head>
   <body>
     <main>
-      <h1>404</h1>
+      <h1>ページが見つかりません</h1>
       <p>ページが見つかりません。</p>
       <nav aria-label="主要ページ">
         <a href="/">トップページへ戻る</a>

@@ -1,5 +1,27 @@
 # bananametal-dev.github.io
-Banana Metal - Apps, Music and Creative Tools
+
+Banana Metal の公開アプリ、楽曲、問い合わせ導線をまとめる GitHub Pages 向け静的サイトです。
+
+## Overview
+
+初期版では、次のページを提供します。
+
+- Home
+- Apps
+- Music
+- Contact
+- Privacy
+- 404
+
+Google Sheets 自動同期、GitHub Actions デプロイ、Googleフォームの実URL設定は初期版には含めません。
+
+## Tech Stack
+
+- React
+- TypeScript
+- Vite
+- Static JSON data
+- Plain CSS
 
 ## Development
 
@@ -13,6 +35,16 @@ npm run dev
 ```bash
 npm run build
 ```
+
+## Editing Apps
+
+Apps data is managed in `src/data/apps.ts`.
+
+- `available`: show the app and enable the link only when `url` is set.
+- `coming_soon`: show the app with a disabled action.
+- `private`: do not show the app on the public Apps page.
+
+Do not put private app notes, credentials, or unpublished URLs in this file.
 
 ## Editing Songs
 
@@ -47,31 +79,33 @@ Use this shape:
 - Leave `coverImage` empty to show the site placeholder.
 - Use `sortOrder` to control display order.
 
+Do not add private YouTube URLs, production notes, Suno prompts, rights notes, revenue data, or personal information.
+
 ## Contact Setup
 
 `src/config/site.ts` contains the Google Form URL in one place.
 
-- Leave it as `""` while the form is not ready.
-- Set it to a full `https://` or `http://` URL when you want the Contact page button to become active.
+- Leave `googleFormUrl` as `""` while the form is not ready.
+- Set it to a full `https://` or `http://` URL when the Contact page button should become active.
+- Do not commit Googleフォーム回答データ or private form management information.
 
-## Phase 1 Scope
+## Public Repository Safety
 
-This phase provides the public site shell only:
+Do not commit:
 
-- Home
-- Apps
-- Music
-- Contact
-- Privacy
-- 404 page
+- `.env` files
+- API keys
+- passwords
+- OAuth tokens
+- service account JSON
+- GitHub Secrets values
+- private YouTube URLs
+- Googleフォーム回答データ
+- personal information
+- production notes or unpublished prompt text
 
-The following are intentionally not implemented in Phase 1:
+## Deployment
 
-- Apps catalog cards
-- Music catalog loading from `songs.json`
-- Google Forms URL integration
-- Google Sheets API
-- GitHub Actions
-- Authentication
-- Analytics tags
-- External APIs
+GitHub Pages deployment is planned for Phase 6.
+
+This phase does not include GitHub Actions, custom domain setup, Google Sheets automation, or scheduled song synchronization.
