@@ -13,7 +13,7 @@ Banana Metal の公開アプリ、楽曲、問い合わせ導線をまとめる 
 - Privacy
 - 404
 
-Google Sheets 自動同期、GitHub Actions デプロイ、Googleフォームの実URL設定は初期版には含めません。
+Google Sheets 自動同期、Googleフォームの実URL設定、独自ドメイン設定は初期版には含めません。
 
 ## Tech Stack
 
@@ -35,6 +35,16 @@ npm run dev
 ```bash
 npm run build
 ```
+
+`npm run build` は Vite の build 後に `scripts/prepare-pages.mjs` を実行します。
+このスクリプトは GitHub Pages で直接URLアクセスしやすいように、次の静的ルートへ `dist/index.html` をコピーします。
+
+- `dist/apps/index.html`
+- `dist/music/index.html`
+- `dist/contact/index.html`
+- `dist/privacy/index.html`
+
+未知のURLは `public/404.html` が GitHub Pages の404ページとして表示されます。
 
 ## Editing Apps
 
@@ -89,9 +99,40 @@ Do not add private YouTube URLs, production notes, Suno prompts, rights notes, r
 - Set it to a full `https://` or `http://` URL when the Contact page button should become active.
 - Do not commit Googleフォーム回答データ or private form management information.
 
+## GitHub Pages Deployment
+
+GitHub Pages deployment uses GitHub Actions.
+
+Repository settings required on GitHub:
+
+1. Open Repository Settings.
+2. Open Pages.
+3. Find Build and deployment.
+4. Set Source to GitHub Actions.
+
+Deployment behavior:
+
+- Pushes to `main` run the deploy workflow.
+- The workflow can also be started manually from the Actions tab with Run workflow.
+- The planned public URL is `https://bananametal-dev.github.io/`.
+- The Vite `base` is set to `/` in `vite.config.ts` because this repository is treated as a `username.github.io` user site.
+- If this site is later moved to a project repository, update `base` in `vite.config.ts` to the repository path, for example `/repository-name/`.
+
+URLs to verify after deployment:
+
+- `https://bananametal-dev.github.io/`
+- `https://bananametal-dev.github.io/apps/`
+- `https://bananametal-dev.github.io/music/`
+- `https://bananametal-dev.github.io/contact/`
+- `https://bananametal-dev.github.io/privacy/`
+- `https://bananametal-dev.github.io/404.html`
+- `https://bananametal-dev.github.io/data/songs.json`
+
+The GitHub Actions workflow only builds and deploys the static Vite site. It does not sync song data from Google Sheets.
+
 ## Public Repository Safety
 
-Do not commit:
+GitHub Pages publishes this public repository as an internet-accessible website. Do not commit:
 
 - `.env` files
 - API keys
@@ -104,8 +145,6 @@ Do not commit:
 - personal information
 - production notes or unpublished prompt text
 
-## Deployment
+## Future Automation
 
-GitHub Pages deployment is planned for Phase 6.
-
-This phase does not include GitHub Actions, custom domain setup, Google Sheets automation, or scheduled song synchronization.
+Google Sheets automatic synchronization is a separate future phase. The current deployment workflow does not add Google Sheets API, Apps Script, service accounts, GitHub Secrets, scheduled sync, or song catalog automation.
