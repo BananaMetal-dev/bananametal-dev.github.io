@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.env
+.env.*
+*.pem
+*.key
+service-account*.json
+google-key*.json
