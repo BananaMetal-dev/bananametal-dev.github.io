@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
+import { apps, statusLabelMap, type AppEntry } from "./data/apps";
 
 type PageKey = "home" | "apps" | "music" | "contact" | "privacy" | "not-found";
 
@@ -48,8 +49,8 @@ const pageContent: Record<PageKey, { title: string; lead: string; body: string }
   },
   apps: {
     title: "Apps",
-    lead: "公開予定のブラウザアプリを紹介するページです。",
-    body: "アプリカード、状態管理、利用ページへのリンクはPhase 2で追加します。",
+    lead: "公開予定のブラウザアプリを一覧で確認できるページです。",
+    body: "各アプリの状態、説明、特徴、利用上の注意をまとめて表示します。",
   },
   music: {
     title: "Music",
@@ -72,6 +73,117 @@ const pageContent: Record<PageKey, { title: string; lead: string; body: string }
     body: "トップページ、Apps、Music、Contactのいずれかへ移動してください。",
   },
 };
+
+const visibleApps = apps.filter((app) => app.status !== "private");
+
+function getAppAction(app: AppEntry) {
+  if (app.status === "available" && app.url) {
+    return (
+      <a className="button button-primary app-action" href={app.url}>
+        アプリを開く
+      </a>
+    );
+  }
+
+  if (app.status === "available") {
+    return (
+      <button className="button button-disabled app-action" type="button" disabled>
+        リンク未設定
+      </button>
+    );
+  }
+
+  return (
+    <button className="button button-disabled app-action" type="button" disabled>
+      準備中
+    </button>
+  );
+}
+
+function getStatusTone(status: AppEntry["status"]) {
+  if (status === "available") {
+    return "status-pill is-available";
+  }
+
+  if (status === "coming_soon") {
+    return "status-pill is-coming-soon";
+  }
+
+  return "status-pill is-private";
+}
+
+function AppCard({ app }: { app: AppEntry }) {
+  return (
+    <article className="app-card">
+      <div className="app-visual" aria-hidden="true">
+        <div className="app-visual-inner">
+          <span className="app-visual-title">Preview</span>
+          <span className="app-visual-subtitle">Screenshot準備中</span>
+        </div>
+      </div>
+      <div className="app-card-body">
+        <div className="app-card-topline">
+          <h2>{app.name}</h2>
+          <span className={getStatusTone(app.status)}>{statusLabelMap[app.status]}</span>
+        </div>
+        <p className="app-description">{app.description}</p>
+
+        <section className="app-block" aria-labelledby={`${app.name}-features`}>
+          <h3 id={`${app.name}-features`}>主な特徴</h3>
+          <ul className="app-list">
+            {app.features.map((feature) => (
+              <li key={feature}>{feature}</li>
+            ))}
+          </ul>
+        </section>
+
+        <section className="app-block" aria-labelledby={`${app.name}-notes`}>
+          <h3 id={`${app.name}-notes`}>利用上の注意</h3>
+          <ul className="app-list app-list-muted">
+            {app.notes.map((note) => (
+              <li key={note}>{note}</li>
+            ))}
+          </ul>
+        </section>
+
+        <div className="app-actions" aria-label={`${app.name} の操作領域`}>
+          {getAppAction(app)}
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function AppsPage() {
+  return (
+    <main className="page-shell">
+      <section className="hero hero-compact" aria-labelledby="page-title">
+        <div className="hero-copy">
+          <h1 id="page-title">{pageContent.apps.title}</h1>
+          <p className="lead">{pageContent.apps.lead}</p>
+          <p>{pageContent.apps.body}</p>
+        </div>
+        <div className="status-panel" aria-label="Appsページの説明">
+          <p className="panel-title">Apps</p>
+          <p>公開状態とリンクの有無で表示を切り替えます。</p>
+          <ul>
+            <li>private は表示しない</li>
+            <li>coming_soon は準備中表示</li>
+            <li>available は URL ありのみ遷移</li>
+          </ul>
+        </div>
+      </section>
+
+      <section className="apps-section" aria-label="アプリ一覧">
+        <div className="apps-grid">
+          {visibleApps.map((app) => (
+            <AppCard key={app.name} app={app} />
+          ))}
+        </div>
+      </section>
+    </main>
+  );
+}
 
 function Header({ currentPage }: { currentPage: PageKey }) {
   return (
@@ -99,6 +211,10 @@ function Header({ currentPage }: { currentPage: PageKey }) {
 
 function PageBody({ currentPage }: { currentPage: PageKey }) {
   const content = pageContent[currentPage];
+
+  if (currentPage === "apps") {
+    return <AppsPage />;
+  }
 
   return (
     <main className="page-shell">
