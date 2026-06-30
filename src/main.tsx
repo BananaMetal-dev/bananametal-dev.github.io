@@ -2,6 +2,7 @@ import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
 import { apps, statusLabelMap, type AppEntry } from "./data/apps";
+import { googleFormUrl } from "./config/site";
 
 type PageKey = "home" | "apps" | "music" | "contact" | "privacy" | "not-found";
 type SongEntry = {
@@ -27,6 +28,11 @@ type MusicState =
   | { status: "loading" }
   | { status: "loaded"; catalog: SongsCatalog }
   | { status: "error"; message: string };
+
+type ContactState = {
+  isConfigured: boolean;
+  isValidUrl: boolean;
+};
 
 const navItems: Array<{ label: string; href: string; page: PageKey }> = [
   { label: "Home", href: "/", page: "home" },
@@ -277,6 +283,143 @@ function AppsPage() {
   );
 }
 
+function getContactState(): ContactState {
+  const trimmedUrl = googleFormUrl.trim();
+
+  if (!trimmedUrl) {
+    return { isConfigured: false, isValidUrl: false };
+  }
+
+  try {
+    const parsedUrl = new URL(trimmedUrl);
+
+    if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+      return { isConfigured: false, isValidUrl: false };
+    }
+
+    return { isConfigured: true, isValidUrl: true };
+  } catch {
+    return { isConfigured: false, isValidUrl: false };
+  }
+}
+
+function ContactPage() {
+  const { isConfigured, isValidUrl } = getContactState();
+
+  return (
+    <main className="page-shell">
+      <section className="hero hero-compact" aria-labelledby="page-title">
+        <div className="hero-copy">
+          <h1 id="page-title">{pageContent.contact.title}</h1>
+          <p className="lead">{pageContent.contact.lead}</p>
+          <p>{pageContent.contact.body}</p>
+        </div>
+        <div className="status-panel" aria-label="問い合わせ案内">
+          <p className="panel-title">Contact</p>
+          <p>以下の内容を受け付ける想定です。</p>
+          <ul>
+            <li>アプリの不具合</li>
+            <li>機能要望</li>
+            <li>楽曲について</li>
+            <li>仕事・連携の相談</li>
+            <li>その他</li>
+          </ul>
+          <p className="status-note">返信には時間がかかる場合があります。</p>
+        </div>
+      </section>
+
+      <section className="contact-section" aria-label="お問い合わせ操作">
+        <div className="contact-panel">
+          <div>
+            <h2>お問い合わせフォーム</h2>
+            <p>
+              {isConfigured && isValidUrl
+                ? "フォームを開いて送信できます。"
+                : "お問い合わせフォームは準備中です。"}
+            </p>
+          </div>
+          <div className="contact-actions">
+            {isConfigured && isValidUrl ? (
+              <a
+                className="button button-primary"
+                href={googleFormUrl.trim()}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                お問い合わせフォームを開く
+              </a>
+            ) : (
+              <button className="button button-disabled" type="button" disabled>
+                お問い合わせフォームは準備中です
+              </button>
+            )}
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+function PrivacyPage() {
+  return (
+    <main className="page-shell">
+      <section className="hero hero-compact" aria-labelledby="page-title">
+        <div className="hero-copy">
+          <h1 id="page-title">{pageContent.privacy.title}</h1>
+          <p className="lead">{pageContent.privacy.lead}</p>
+          <p>{pageContent.privacy.body}</p>
+        </div>
+        <div className="status-panel" aria-label="プライバシーの要点">
+          <p className="panel-title">Privacy</p>
+          <p>公開前に押さえる要点だけをまとめています。</p>
+          <ul>
+            <li>問い合わせは対応のために利用</li>
+            <li>個別仕様は各アプリの説明に従う</li>
+            <li>外部サービス先の規約が適用</li>
+          </ul>
+        </div>
+      </section>
+
+      <section className="privacy-section" aria-label="プライバシー本文">
+        <article className="privacy-block">
+          <h2>お問い合わせ内容について</h2>
+          <p>お問い合わせ内容は、返信や対応のために利用します。</p>
+          <p>
+            お問い合わせはGoogleフォームおよびGoogleスプレッドシートで管理される予定です。
+          </p>
+        </article>
+
+        <article className="privacy-block">
+          <h2>公開アプリについて</h2>
+          <p>各アプリのデータ処理や保存方式は、アプリごとの説明に従います。</p>
+          <p>
+            ブラウザ内処理を採用するアプリでは、音源・画像・生成動画を当サイトへアップロードしない設計を目指します。
+          </p>
+          <p>将来の機能追加により、アプリごとの仕様が変わる可能性があります。</p>
+        </article>
+
+        <article className="privacy-block">
+          <h2>外部サービスについて</h2>
+          <p>
+            YouTubeやGoogleフォームなどの外部サービスへのリンク先では、各サービス側の規約やプライバシーポリシーが適用されます。
+          </p>
+          <p>当サイトから外部サービスへ移動した後の扱いは、各サービス側の方針に従います。</p>
+        </article>
+
+        <article className="privacy-block">
+          <h2>注意事項</h2>
+          <p>
+            当サイトは外部通信を一切行わないと断定しません。将来の公開プリセット、外部リンク、フォーム運用などを考慮し、過度に断定的な表現を避けます。
+          </p>
+          <p>
+            個人情報、認証情報、問い合わせ回答データは公開リポジトリへ入れない方針です。
+          </p>
+        </article>
+      </section>
+    </main>
+  );
+}
+
 function SongCover({ song }: { song: SongEntry }) {
   const [hasImageError, setHasImageError] = useState(false);
   const shouldShowImage = Boolean(song.coverImage.trim()) && !hasImageError;
@@ -511,6 +654,14 @@ function PageBody({ currentPage }: { currentPage: PageKey }) {
 
   if (currentPage === "music") {
     return <MusicPage />;
+  }
+
+  if (currentPage === "contact") {
+    return <ContactPage />;
+  }
+
+  if (currentPage === "privacy") {
+    return <PrivacyPage />;
   }
 
   return (

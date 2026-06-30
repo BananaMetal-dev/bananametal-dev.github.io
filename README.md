@@ -47,6 +47,13 @@ Use this shape:
 - Leave `coverImage` empty to show the site placeholder.
 - Use `sortOrder` to control display order.
 
+## Contact Setup
+
+`src/config/site.ts` contains the Google Form URL in one place.
+
+- Leave it as `""` while the form is not ready.
+- Set it to a full `https://` or `http://` URL when you want the Contact page button to become active.
+
 ## Phase 1 Scope
 
 This phase provides the public site shell only:
