@@ -34,6 +34,11 @@ type ContactState = {
   isValidUrl: boolean;
 };
 
+type PageMeta = {
+  title: string;
+  description: string;
+};
+
 const navItems: Array<{ label: string; href: string; page: PageKey }> = [
   { label: "Home", href: "/", page: "home" },
   { label: "Apps", href: "/apps/", page: "apps" },
@@ -103,7 +108,53 @@ const pageContent: Record<PageKey, { title: string; lead: string; body: string }
   },
 };
 
+const pageMeta: Record<PageKey, PageMeta> = {
+  home: {
+    title: "Banana Metal | Apps, Music and Creative Tools",
+    description: "Banana Metal の公開アプリ、楽曲、問い合わせ導線をまとめる静的サイトです。",
+  },
+  apps: {
+    title: "Apps | Banana Metal",
+    description: "Banana Metal が公開予定のブラウザアプリを一覧で確認できます。",
+  },
+  music: {
+    title: "Music | Banana Metal",
+    description: "Banana Metal の公開用楽曲データと YouTube への外部リンクを掲載しています。",
+  },
+  contact: {
+    title: "Contact | Banana Metal",
+    description: "アプリの不具合、機能要望、楽曲、仕事や連携についての問い合わせ案内です。",
+  },
+  privacy: {
+    title: "Privacy | Banana Metal",
+    description: "問い合わせ内容、公開アプリ、外部サービスの扱いについての案内です。",
+  },
+  "not-found": {
+    title: "ページが見つかりません | Banana Metal",
+    description: "指定されたページは見つかりませんでした。主要ページへの導線を表示します。",
+  },
+};
+
 const youtubeIdPattern = /^[A-Za-z0-9_-]{6,}$/;
+
+function setMetaAttribute(selector: string, attribute: "content", value: string) {
+  const tag = document.head.querySelector(selector);
+
+  if (tag) {
+    tag.setAttribute(attribute, value);
+  }
+}
+
+function applyPageMeta(currentPage: PageKey) {
+  const meta = pageMeta[currentPage];
+
+  document.title = meta.title;
+  setMetaAttribute('meta[name="description"]', "content", meta.description);
+  setMetaAttribute('meta[property="og:title"]', "content", meta.title);
+  setMetaAttribute('meta[property="og:description"]', "content", meta.description);
+  setMetaAttribute('meta[property="og:type"]', "content", "website");
+  setMetaAttribute('meta[property="og:site_name"]', "content", "Banana Metal");
+}
 
 function isSongEntry(value: unknown): value is SongEntry {
   if (!value || typeof value !== "object") {
@@ -708,6 +759,10 @@ function Footer() {
 
 function App() {
   const currentPage = getCurrentPage();
+
+  useEffect(() => {
+    applyPageMeta(currentPage);
+  }, [currentPage]);
 
   return (
     <>

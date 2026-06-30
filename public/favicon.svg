@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Banana Metal">
+  <rect width="64" height="64" rx="16" fill="#201815"/>
+  <path d="M14 46c12 4 28-2 36-18 2-4 0-7-4-7-4 10-13 17-24 19-4 1-7 1-10 0 0 3 1 5 2 6Z" fill="#f0b44d"/>
+  <text x="32" y="38" text-anchor="middle" font-family="Arial, sans-serif" font-size="17" font-weight="800" fill="#fffaf2">BM</text>
+</svg>

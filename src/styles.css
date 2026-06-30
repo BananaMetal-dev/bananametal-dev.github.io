@@ -27,6 +27,12 @@ a {
   color: inherit;
 }
 
+a:focus-visible,
+button:focus-visible {
+  outline: 3px solid #201815;
+  outline-offset: 4px;
+}
+
 .site-header {
   width: min(1120px, calc(100% - 32px));
   margin: 0 auto;
@@ -42,7 +48,7 @@ a {
   align-items: center;
   gap: 12px;
   font-weight: 800;
-  letter-spacing: -0.03em;
+  letter-spacing: 0;
   text-decoration: none;
 }
 
@@ -55,7 +61,7 @@ a {
   color: #fffaf2;
   background: #201815;
   font-size: 0.78rem;
-  letter-spacing: 0.04em;
+  letter-spacing: 0;
 }
 
 .site-nav {
@@ -111,9 +117,9 @@ a {
 h1 {
   margin: 0;
   max-width: 12ch;
-  font-size: clamp(3rem, 10vw, 7.5rem);
+  font-size: 6rem;
   line-height: 0.9;
-  letter-spacing: -0.085em;
+  letter-spacing: 0;
 }
 
 p {
@@ -172,7 +178,7 @@ p {
   margin-top: 0;
   font-size: 1.5rem;
   font-weight: 900;
-  letter-spacing: -0.04em;
+  letter-spacing: 0;
 }
 
 .status-panel ul {
@@ -269,7 +275,7 @@ p {
   margin: 0;
   font-size: clamp(1.5rem, 2.8vw, 2rem);
   line-height: 1.1;
-  letter-spacing: -0.05em;
+  letter-spacing: 0;
 }
 
 .status-pill {
@@ -282,7 +288,7 @@ p {
   border: 1px solid transparent;
   font-size: 0.82rem;
   font-weight: 800;
-  letter-spacing: 0.04em;
+  letter-spacing: 0;
   white-space: nowrap;
 }
 
@@ -316,7 +322,7 @@ p {
 .app-block h3 {
   margin: 0 0 12px;
   font-size: 1rem;
-  letter-spacing: -0.03em;
+  letter-spacing: 0;
 }
 
 .app-list {
@@ -603,6 +609,7 @@ p {
 
   h1 {
     max-width: 10ch;
+    font-size: 4rem;
   }
 }
 
@@ -620,6 +627,11 @@ p {
 
   .hero-actions {
     flex-direction: column;
+  }
+
+  h1 {
+    font-size: 3rem;
+    line-height: 1;
   }
 
   .app-action {
