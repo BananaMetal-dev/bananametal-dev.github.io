@@ -1,0 +1,31 @@
+{
+  "updatedAt": "2026-06-30T00:07:12+09:00",
+  "songs": [
+    {
+      "id": "001",
+      "siteVisible": true,
+      "featured": true,
+      "title": "Sample Track One",
+      "artist": "Banana Metal",
+      "youtubeId": "sampleVideoIdOne",
+      "coverImage": "",
+      "description": "楽曲一覧表示のためのサンプルデータです。",
+      "releaseDate": "2026-06-30",
+      "tags": ["sample", "metal"],
+      "sortOrder": 10
+    },
+    {
+      "id": "002",
+      "siteVisible": true,
+      "featured": false,
+      "title": "Sample Track Two",
+      "artist": "Banana Metal",
+      "youtubeId": "sampleVideoIdTwo",
+      "coverImage": "",
+      "description": "公開用楽曲データの表示確認用サンプルです。",
+      "releaseDate": "2026-06-29",
+      "tags": ["sample", "music"],
+      "sortOrder": 20
+    }
+  ]
+}
