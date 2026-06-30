@@ -358,6 +358,61 @@ p {
   min-width: 180px;
 }
 
+.status-note {
+  margin-top: 18px;
+  color: rgba(32, 24, 21, 0.68);
+}
+
+.contact-section,
+.privacy-section {
+  margin-top: clamp(28px, 5vw, 52px);
+}
+
+.contact-panel {
+  border: 1px solid rgba(32, 24, 21, 0.14);
+  border-radius: 32px;
+  background: rgba(255, 250, 242, 0.84);
+  padding: clamp(24px, 5vw, 36px);
+  box-shadow: 0 20px 60px rgba(50, 32, 18, 0.09);
+  display: grid;
+  gap: 20px;
+}
+
+.contact-panel h2,
+.privacy-block h2 {
+  margin: 0;
+  font-size: 1.35rem;
+  line-height: 1.2;
+}
+
+.contact-panel p {
+  margin: 12px 0 0;
+}
+
+.contact-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.privacy-section {
+  display: grid;
+  gap: 20px;
+}
+
+.privacy-block {
+  border: 1px solid rgba(32, 24, 21, 0.14);
+  border-radius: 32px;
+  background: rgba(255, 250, 242, 0.84);
+  padding: clamp(24px, 5vw, 36px);
+  box-shadow: 0 20px 60px rgba(50, 32, 18, 0.09);
+}
+
+.privacy-block p {
+  margin: 12px 0 0;
+  color: rgba(32, 24, 21, 0.76);
+}
+
 .music-section {
   margin-top: clamp(28px, 5vw, 56px);
 }
@@ -575,5 +630,13 @@ p {
   .song-action {
     width: 100%;
     min-width: 0;
+  }
+
+  .contact-actions {
+    flex-direction: column;
+  }
+
+  .contact-actions .button {
+    width: 100%;
   }
 }
