@@ -20,11 +20,12 @@ export const apps: AppEntry[] = [
   },
   {
     name: "Suno Prompt Manager",
-    status: "coming_soon",
+    status: "available",
     description:
       "音楽生成向けのStyle、Lyrics、Excludeを分けて整理し、プリセットとして管理するためのブラウザアプリです。",
-    features: ["プロンプトを用途別に整理", "プリセット管理を想定", "JSONバックアップ対応を予定"],
-    notes: ["現在準備中です", "実際の保存仕様は公開時に案内します"],
+    features: ["プロンプトを用途別に整理", "シート単位で管理", "JSONインポート / エクスポート対応"],
+    notes: ["入力内容はブラウザ内のlocalStorageへ保存されます", "PCの広い画面での利用を推奨します"],
+    url: "/apps/prompt-generator/",
   },
 ];
 
