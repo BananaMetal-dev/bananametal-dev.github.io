@@ -12,11 +12,12 @@ export type AppEntry = {
 export const apps: AppEntry[] = [
   {
     name: "音楽ビジュアライザー",
-    status: "coming_soon",
+    status: "available",
     description:
       "自分の音楽と画像を端末内で扱い、簡易ビジュアライザー動画を作成するためのブラウザアプリです。",
-    features: ["音源と画像は端末内で扱う設計", "インストール不要", "PC版Chrome / Edgeを主対象"],
-    notes: ["現在準備中です", "出力形式や対応環境は公開時に案内します"],
+    features: ["音源と画像は端末内で扱う設計", "WebMを書き出し可能", "PC版Chrome / Edgeを主対象"],
+    notes: ["MP4変換は次段階です", "端末性能に応じて書き出し時間が変わります"],
+    url: "/apps/visualizer/",
   },
   {
     name: "Suno Prompt Manager",
