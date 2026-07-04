@@ -1,0 +1,284 @@
+﻿<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Banana Visualizer | Banana Metal</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">BM</span>
+        <div class="brand-copy">
+          <p class="brand-kicker">Banana Metal</p>
+          <div class="brand-title-row">
+            <h1>Banana Visualizer</h1>
+            <span class="brand-note">Browser render Ready. 画像・音声・生成動画はサーバーへ送信しません。 / Images, audio, and generated videos are not sent to the server.</span>
+          </div>
+        </div>
+      </div>
+      <nav class="topbar-actions" aria-label="project controls">
+        <a class="tool-button" href="/apps/">Apps</a>
+        <button id="loadProjectButton" class="tool-button" type="button">Load project</button>
+        <button id="saveProjectButton" class="tool-button" type="button">Save project</button>
+        <button id="resetProjectButton" class="tool-button" type="button">Reset</button>
+      </nav>
+      <input id="projectFileInput" type="file" accept="application/json,.json" hidden>
+    </header>
+
+    <section id="workspace" class="workspace" style="--left-panel-width: 340px; --right-panel-width: 340px;">
+      <div
+        id="leftResizer"
+        class="workspace-resizer workspace-resizer-left"
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize left menu"
+        tabindex="0"
+      ></div>
+
+      <aside class="sidebar">
+        <div class="panel-heading">
+          <span class="heading-tag">Assets</span>
+          <span class="heading-note">ローカル読み込みのみ</span>
+        </div>
+
+        <details id="imageDrop" class="asset-group" open>
+          <summary class="asset-summary" aria-label="Still image asset">
+            <div class="asset-icon">IMG</div>
+            <div class="asset-copy">
+              <strong>Still image</strong>
+              <small id="imageAssetState">Not loaded</small>
+            </div>
+          </summary>
+          <div class="asset-body">
+            <div class="asset-actions">
+              <button id="imageFileButton" type="button">File</button>
+              <button id="imageFolderButton" type="button">Folder</button>
+            </div>
+            <input id="imageFileInput" type="file" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" hidden>
+            <input id="imageFolderInput" type="file" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" webkitdirectory directory multiple hidden>
+          </div>
+        </details>
+
+        <details id="audioDrop" class="asset-group" open>
+          <summary class="asset-summary" aria-label="Audio track asset">
+            <div class="asset-icon">AUD</div>
+            <div class="asset-copy">
+              <strong>Audio track</strong>
+              <small id="audioAssetState">Not loaded</small>
+            </div>
+          </summary>
+          <div class="asset-body">
+            <div class="asset-actions">
+              <button id="audioFileButton" type="button">File</button>
+              <button id="audioFolderButton" type="button">Folder</button>
+            </div>
+            <input id="audioFileInput" type="file" accept=".mp3,.wav,.ogg,.m4a,audio/*" hidden>
+            <input id="audioFolderInput" type="file" accept=".mp3,.wav,.ogg,.m4a,audio/*" webkitdirectory directory multiple hidden>
+          </div>
+        </details>
+
+        <details id="watermarkDrop" class="asset-group" open>
+          <summary class="asset-summary" aria-label="Watermark asset">
+            <div class="asset-icon">WM</div>
+            <div class="asset-copy">
+              <strong>Watermark icon</strong>
+              <small id="watermarkAssetState">Not loaded</small>
+            </div>
+          </summary>
+          <div class="asset-body">
+            <div class="asset-actions">
+              <button id="watermarkFileButton" type="button">File</button>
+              <button id="watermarkFolderButton" type="button">Folder</button>
+            </div>
+            <input id="watermarkFileInput" type="file" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" hidden>
+            <input id="watermarkFolderInput" type="file" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" webkitdirectory directory multiple hidden>
+          </div>
+        </details>
+
+        <details class="collapsible-group" open>
+          <summary class="collapsible-trigger">Project</summary>
+          <div class="collapsible-content">
+            <div class="segmented">
+              <button id="timelineSilentButton" type="button" class="active">Silent duration</button>
+              <button id="timelineAudioButton" type="button">Full audio length</button>
+            </div>
+            <label class="field">
+              <span>Duration seconds</span>
+              <input id="durationInput" type="number" min="0.3" max="3600" step="0.1">
+            </label>
+          </div>
+        </details>
+
+        <details class="collapsible-group" open>
+          <summary class="collapsible-trigger">Canvas</summary>
+          <div class="collapsible-content">
+            <div class="preset-field">
+              <span>Image size</span>
+              <div class="preset-buttons" id="sizePresetButtons"></div>
+            </div>
+            <div class="preset-field">
+              <span>Aspect ratio</span>
+              <div class="preset-buttons aspect-buttons" id="aspectPresetButtons"></div>
+            </div>
+            <p id="canvasReadout" class="canvas-readout">1280 x 720</p>
+            <label class="field">
+              <span>Frame rate</span>
+              <select id="fpsSelect">
+                <option value="30">30 fps</option>
+                <option value="60">60 fps</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Background fit</span>
+              <div class="segmented">
+                <button id="fitCropButton" type="button" class="active">Crop</button>
+                <button id="fitLetterboxButton" type="button">Letterbox</button>
+              </div>
+            </label>
+            <label class="field">
+              <span>Background zoom</span>
+              <input id="zoomInput" type="range" min="0.3" max="3" step="0.01">
+            </label>
+            <div class="transform-row">
+              <span id="zoomValue">0.30x</span>
+            </div>
+          </div>
+        </details>
+
+      </aside>
+
+      <div class="center">
+        <section class="preview-shell" aria-label="Preview">
+          <div class="preview-toolbar">
+            <span>Preview</span>
+            <div class="preview-controls">
+              <button id="playButton" type="button">Play preview</button>
+              <span id="previewReadout">1280 x 720 / 30fps</span>
+            </div>
+          </div>
+          <div id="previewFrame" class="preview-frame">
+            <canvas
+              id="previewCanvas"
+              class="preview-canvas is-draggable"
+              width="1280"
+              height="720"
+              tabindex="0"
+            ></canvas>
+          </div>
+        </section>
+
+      </div>
+
+      <div
+        id="rightResizer"
+        class="workspace-resizer workspace-resizer-right"
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize right menu"
+        tabindex="0"
+      ></div>
+
+      <aside class="inspector">
+        <div class="panel-heading">
+          <span class="heading-tag">Render</span>
+          <span class="heading-note">Browser only</span>
+        </div>
+
+        <details class="collapsible-group" open>
+          <summary class="collapsible-trigger">
+            <span>Visualizer</span>
+            <small class="summary-hint">Drag on the preview to move it.</small>
+          </summary>
+          <div class="collapsible-content">
+            <label class="field">
+              <span>Visualizer</span>
+              <select id="shapeSelect"></select>
+            </label>
+            <label class="field">
+              <span>Response</span>
+              <select id="responseSelect"></select>
+            </label>
+            <label class="field">
+              <span>Color</span>
+              <select id="colorSelect"></select>
+            </label>
+            <label class="field">
+              <span>Bar count</span>
+              <input id="barCountInput" type="range" min="24" max="256" step="1">
+            </label>
+            <div class="transform-row">
+              <span id="barCountValue">120</span>
+            </div>
+            <label class="field">
+              <span>Size</span>
+              <input id="visualizerSizeInput" type="range" min="0" max="100" step="1">
+            </label>
+            <div class="transform-row">
+              <span id="visualizerSizeValue">55%</span>
+            </div>
+          </div>
+        </details>
+
+        <details class="collapsible-group">
+          <summary class="collapsible-trigger">
+            <span>Watermark</span>
+            <small class="summary-hint">Drag on the preview to move it.</small>
+          </summary>
+          <div class="collapsible-content">
+            <label class="toggle-row">
+              <span>Watermark</span>
+              <input id="watermarkEnabledInput" type="checkbox">
+            </label>
+            <label class="field">
+              <span>Size</span>
+              <select id="watermarkSizeSelect">
+                <option value="large">Large</option>
+                <option value="medium">Medium</option>
+                <option value="small">Small</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Opacity</span>
+              <input id="watermarkOpacityInput" type="range" min="0" max="100" step="1">
+            </label>
+            <div class="transform-row">
+              <span id="watermarkOpacityValue">58%</span>
+            </div>
+            <div class="transform-row">
+              <span>Drag the watermark on the preview to change its position.</span>
+            </div>
+          </div>
+        </details>
+
+        <details class="collapsible-group" open>
+          <summary class="collapsible-trigger">Export</summary>
+          <div class="collapsible-content">
+            <div class="queue queue-inline" aria-label="Export status">
+              <button id="renderButton" class="tool-button primary queue-start" type="button">Start render</button>
+              <button id="stopButton" class="tool-button" type="button" disabled hidden>Stop</button>
+              <button id="mp4Button" class="tool-button" type="button" disabled hidden>MP4 next</button>
+              <a id="downloadLink" class="tool-button primary" download="banana-visualizer-output.webm" hidden>Download</a>
+            </div>
+            <label class="field">
+              <span>Output name</span>
+              <input id="outputNameInput" type="text">
+            </label>
+            <p class="canvas-readout" id="playbackText">00:00 / --:--</p>
+            <p id="statusText">Ready</p>
+            <code id="resultMeta">No output yet</code>
+            <video id="resultVideo" controls playsinline hidden></video>
+          </div>
+        </details>
+      </aside>
+    </section>
+  </main>
+
+  <audio id="audioElement" preload="auto" hidden></audio>
+  <script src="app.js"></script>
+</body>
+</html>
+

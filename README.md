@@ -56,6 +56,15 @@ Apps data is managed in `src/data/apps.ts`.
 
 Do not put private app notes, credentials, or unpublished URLs in this file.
 
+## Visualizer App
+
+The browser visualizer lives in `public/apps/visualizer/`.
+
+- It is a static app served by GitHub Pages.
+- Image, audio, and generated video stay in the browser.
+- Phase 1 exports WebM only.
+- MP4 conversion is planned for a later phase and is not included in the current build.
+
 ## Editing Songs
 
 Music data is managed manually in `public/data/songs.json`.
