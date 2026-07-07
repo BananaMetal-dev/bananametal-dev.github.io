@@ -1,4 +1,4 @@
-import { StrictMode, useEffect, useState } from "react";
+import { StrictMode, useEffect, useState, type CSSProperties } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
 import { apps, statusLabelMap, type AppEntry, type Language, type LocalizedText } from "./data/apps";
@@ -429,9 +429,10 @@ function getAppAction(app: AppEntry, language: Language) {
 
 function AppCard({ app, language }: { app: AppEntry; language: Language }) {
   const appName = t(language, app.name);
+  const visualStyle = app.previewAspectRatio ? ({ aspectRatio: app.previewAspectRatio } as CSSProperties) : undefined;
   return (
     <article className="app-card">
-      <div className="app-visual" aria-hidden="true">
+      <div className="app-visual" aria-hidden="true" style={visualStyle}>
         {app.previewImage ? (
           <img className="app-visual-image" src={app.previewImage} alt="" />
         ) : (
