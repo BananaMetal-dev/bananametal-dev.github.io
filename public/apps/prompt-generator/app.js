@@ -1,6 +1,95 @@
 (() => {
   "use strict";
 
+  const languageApi = window.BananaMetalLanguage;
+  let currentLanguage = languageApi?.getLanguage?.() === "en" ? "en" : "ja";
+  const TEXT = {
+    title: { ja: "Prompt Manager", en: "Prompt Manager" },
+    lead: {
+      ja: "Style、Lyrics、Exclude用の部品を整理し、ブラウザ内で組み立てる管理ツールです",
+      en: "A browser tool for organizing Style, Lyrics, and Exclude parts and building prompts locally.",
+    },
+    backToApps: { ja: "Appsへ戻る", en: "Back to Apps" },
+    saved: { ja: "保存済み", en: "Saved" },
+    saving: { ja: "保存中", en: "Saving" },
+    saveError: { ja: "保存失敗", en: "Save failed" },
+    editMode: { ja: "編集モード", en: "Edit Mode" },
+    localNote: {
+      ja: "入力内容はこのブラウザ内の localStorage に保存されます。必要に応じて JSON エクスポートでバックアップしてください。",
+      en: "Inputs are saved in this browser's localStorage. Export JSON when you need a backup.",
+    },
+    outputArea: { ja: "生成エリア", en: "Output Area" },
+    copy: { ja: "コピー", en: "Copy" },
+    resetSheet: { ja: "シートをリセット", en: "Reset Sheet" },
+    joinMode: { ja: "ボタン間を", en: "Join buttons with" },
+    joinNewline: { ja: "改行", en: "New line" },
+    joinInline: { ja: "連結", en: "Inline" },
+    promptCount: { ja: "{count}個のプロンプトを使用中", en: "{count} prompts enabled" },
+    sheetManager: { ja: "シート管理", en: "Sheet Manager" },
+    sheetManagerLead: { ja: "編集モード中はここでシート追加、切り替え、並べ替え、名前変更を行います", en: "In edit mode you can add, switch, reorder, and rename sheets here." },
+    rename: { ja: "名前変更", en: "Rename" },
+    delete: { ja: "削除", en: "Delete" },
+    steampunk: { ja: "スチームパンク", en: "Steampunk" },
+    sheetDragNote: { ja: "シートタブはドラッグで順序変更できます。", en: "You can drag sheet tabs to reorder them." },
+    boardHintEdit: { ja: "空セルクリックで追加、ボタン選択で編集、ドラッグで位置変更できます", en: "Click an empty cell to add, select a button to edit, and drag to move it." },
+    boardHintPlay: { ja: "ボタンを押すとON/OFFが切り替わります", en: "Press a button to toggle it on or off." },
+    columns: { ja: "列", en: "Columns" },
+    rows: { ja: "行", en: "Rows" },
+    editPanel: { ja: "編集パネル", en: "Edit Panel" },
+    promptAssign: { ja: "プロンプト割り当て", en: "Prompt Assignment" },
+    buttonEditorEmpty: { ja: "ボタンを選択すると、貼り付け用の入力欄が表示されます。空セルクリックで追加できます。", en: "Select a button to show the paste fields. Click an empty cell to add a new button." },
+    selected: { ja: "選択中", en: "Selected" },
+    notSelected: { ja: "未選択", en: "Not selected" },
+    promptField: { ja: "貼り付け用プロンプト欄", en: "Prompt Paste Field" },
+    promptFieldPlaceholder: { ja: "ここにプロンプトを貼り付けると、選択中のボタンへ自動保存されます。", en: "Paste a prompt here to save it to the selected button automatically." },
+    buttonName: { ja: "ボタン名", en: "Button Name" },
+    enableButton: { ja: "ONにする", en: "Enable" },
+    deleteButton: { ja: "このボタンを削除", en: "Delete This Button" },
+    data: { ja: "データ", en: "Data" },
+    export: { ja: "エクスポート", en: "Export" },
+    import: { ja: "インポート", en: "Import" },
+    singleCopyTitle: { ja: "個別コピー用ボタンエリア", en: "Single Copy Button Area" },
+    copyBoardHint: { ja: "ボタンを押すと、そのボタンのプロンプトだけをコピーします", en: "Press a button to copy only that button's prompt." },
+    commonSheet: { ja: "共通", en: "Common" },
+    defaultRoleName: { ja: "役割指定", en: "Role" },
+    defaultRolePrompt: { ja: "あなたは専門的な編集者です。", en: "You are a professional editor." },
+    defaultFormatName: { ja: "出力形式", en: "Output Format" },
+    defaultFormatPrompt: { ja: "出力は見出しと箇条書きを使って、読みやすく整理してください。", en: "Structure the output clearly using headings and bullet points." },
+    autoRecovered: { ja: "自動復旧しました", en: "Recovered automatically" },
+    sheetPrefix: { ja: "シート", en: "Sheet" },
+    newPrompt: { ja: "新規プロンプト", en: "New Prompt" },
+    saveFailedToast: { ja: "保存に失敗しました", en: "Failed to save" },
+    selectedAreaBuilder: { ja: "上部", en: "Top" },
+    selectedAreaCopy: { ja: "下部", en: "Bottom" },
+    newSheetPrompt: { ja: "新しいシート名", en: "New sheet name" },
+    newSheetDefault: { ja: "新規シート", en: "New Sheet" },
+    sheetNamePrompt: { ja: "シート名", en: "Sheet name" },
+    sheetNameEmpty: { ja: "シート名は空にできません", en: "Sheet name cannot be empty" },
+    lastSheetDeleteBlocked: { ja: "最後の1シートは削除できません", en: "The last remaining sheet cannot be deleted" },
+    deleteSheetConfirm: { ja: "{name} を削除します。保存済みのボタンも削除されます。よろしいですか。", en: "Delete {name}? Saved buttons in this sheet will also be removed." },
+    deleteButtonConfirm: { ja: "{name} を削除します。格納プロンプトも削除されます。よろしいですか。", en: "Delete {name}? Its stored prompt will also be removed." },
+    resizeConfirm: { ja: "範囲外になるボタンがあります。可能な限り空きセルへ移動して縮小します。よろしいですか。", en: "Some buttons fall out of range. They will be moved into empty cells where possible before shrinking. Continue?" },
+    resizeTooMany: { ja: "ボタン数が多いため、このサイズには縮小できません", en: "There are too many buttons to shrink to this size" },
+    resetTargetMissing: { ja: "リセット対象がありません", en: "Nothing to reset" },
+    resetConfirm: { ja: "現在シートのON状態を全てOFFにし、生成エリアを空にします。よろしいですか。", en: "Turn off all buttons in the current sheet and clear the output area?" },
+    resetDone: { ja: "リセットしました", en: "Reset complete" },
+    outputEmpty: { ja: "生成エリアは空です", en: "The output area is empty" },
+    copied: { ja: "コピーしました", en: "Copied" },
+    copyFailedOutput: { ja: "コピーに失敗しました。生成エリアを選択してコピーしてください", en: "Copy failed. Select the output area and copy it manually." },
+    buttonPromptEmpty: { ja: "このボタンのプロンプトは空です", en: "This button has no prompt text" },
+    buttonCopied: { ja: "{name} をコピーしました", en: "Copied {name}" },
+    copyFailed: { ja: "コピーに失敗しました", en: "Copy failed" },
+    exported: { ja: "エクスポートしました", en: "Exported" },
+    importConfirm: { ja: "現在のデータをインポート内容で置き換えます。実行前に現在データをバックアップします。よろしいですか。", en: "Replace the current data with the imported data? The current data will be backed up first." },
+    imported: { ja: "インポートしました", en: "Imported" },
+    importInvalid: { ja: "インポートできません。不正なJSONです", en: "Import failed. The JSON is invalid." },
+  };
+
+  function t(key, tokens = {}) {
+    const template = TEXT[key]?.[currentLanguage] ?? TEXT[key]?.ja ?? key;
+    return template.replace(/\{(\w+)\}/g, (_, token) => String(tokens[token] ?? ""));
+  }
+
   const STORAGE_KEY = "bananaMetal.promptBuilder.current";
   const BACKUP_KEY = "bananaMetal.promptBuilder.backup.latest";
   const RESIZE_BACKUP_KEY = "bananaMetal.promptBuilder.backup.beforeButtonResize";
@@ -19,6 +108,32 @@
 
   const els = {
     body: document.body,
+    languageJaButton: document.getElementById("languageJaButton"),
+    languageEnButton: document.getElementById("languageEnButton"),
+    appTitle: document.getElementById("appTitle"),
+    appLead: document.getElementById("appLead"),
+    backToAppsLink: document.getElementById("backToAppsLink"),
+    editModeLabel: document.getElementById("editModeLabel"),
+    localNoteText: document.getElementById("localNoteText"),
+    outputAreaTitle: document.getElementById("outputAreaTitle"),
+    joinModeLabel: document.getElementById("joinModeLabel"),
+    sheetManagerTitle: document.getElementById("sheetManagerTitle"),
+    sheetManagerLead: document.getElementById("sheetManagerLead"),
+    themeToggleLabel: document.getElementById("themeToggleLabel"),
+    sheetDragNote: document.getElementById("sheetDragNote"),
+    columnsLabel: document.getElementById("columnsLabel"),
+    rowsLabel: document.getElementById("rowsLabel"),
+    editSheetTitle: document.getElementById("editSheetTitle"),
+    editSheetNote: document.getElementById("editSheetNote"),
+    promptAssignTitle: document.getElementById("promptAssignTitle"),
+    selectedLabel: document.getElementById("selectedLabel"),
+    buttonPromptLabel: document.getElementById("buttonPromptLabel"),
+    buttonNameLabel: document.getElementById("buttonNameLabel"),
+    buttonEnableLabel: document.getElementById("buttonEnableLabel"),
+    dataTitle: document.getElementById("dataTitle"),
+    singleCopyTitle: document.getElementById("singleCopyTitle"),
+    copyColumnsLabel: document.getElementById("copyColumnsLabel"),
+    copyRowsLabel: document.getElementById("copyRowsLabel"),
     contentLayout: document.querySelector(".content-layout"),
     outputResizeHandle: document.getElementById("outputResizeHandle"),
     saveStatus: document.getElementById("saveStatus"),
@@ -73,6 +188,7 @@
   init();
 
   function init() {
+    bindLanguageToggle();
     preserveResizeBackup();
     preserveUpperColorBackup();
     preserveUpperGridViewportBackup();
@@ -82,9 +198,7 @@
     els.editModeToggle.addEventListener("change", () => {
       editMode = els.editModeToggle.checked;
       els.body.classList.toggle("edit-mode", editMode);
-      els.boardHint.textContent = editMode
-        ? "空セルクリックで追加、ボタン選択で編集、ドラッグで位置変更できます"
-        : "ボタンを押すとON/OFFが切り替わります";
+      els.boardHint.textContent = editMode ? t("boardHintEdit") : t("boardHintPlay");
       if (!editMode) {
         selectedButtonId = null;
         selectedArea = "builder";
@@ -116,6 +230,73 @@
 
     render();
     saveNow();
+  }
+
+  function bindLanguageToggle() {
+    els.languageJaButton.addEventListener("click", () => setLanguage("ja"));
+    els.languageEnButton.addEventListener("click", () => setLanguage("en"));
+    languageApi?.subscribe?.((language) => {
+      currentLanguage = language === "en" ? "en" : "ja";
+      applyStaticTexts();
+      render();
+    });
+    setLanguage(currentLanguage);
+  }
+
+  function setLanguage(language) {
+    currentLanguage = language === "en" ? "en" : "ja";
+    languageApi?.setLanguage?.(currentLanguage);
+    applyStaticTexts();
+  }
+
+  function applyStaticTexts() {
+    document.title = `${t("title")} | Banana Metal`;
+    els.appTitle.textContent = t("title");
+    els.appLead.textContent = t("lead");
+    els.backToAppsLink.textContent = t("backToApps");
+    els.editModeLabel.textContent = t("editMode");
+    els.localNoteText.textContent = t("localNote");
+    els.outputAreaTitle.textContent = t("outputArea");
+    els.copyButton.textContent = t("copy");
+    els.resetButton.textContent = t("resetSheet");
+    els.joinModeLabel.textContent = t("joinMode");
+    els.sheetManagerTitle.textContent = t("sheetManager");
+    els.sheetManagerLead.textContent = t("sheetManagerLead");
+    els.editRenameSheetButton.textContent = t("rename");
+    els.editDeleteSheetButton.textContent = t("delete");
+    els.renameSheetButton.textContent = t("rename");
+    els.deleteSheetButton.textContent = t("delete");
+    els.themeToggleLabel.textContent = t("steampunk");
+    els.sheetDragNote.textContent = t("sheetDragNote");
+    els.columnsLabel.textContent = t("columns");
+    els.rowsLabel.textContent = t("rows");
+    els.copyColumnsLabel.textContent = t("columns");
+    els.copyRowsLabel.textContent = t("rows");
+    els.editSheetTitle.textContent = t("sheetManager");
+    els.editSheetNote.textContent = t("sheetDragNote");
+    els.promptAssignTitle.textContent = t("promptAssign");
+    els.buttonEditorEmpty.textContent = t("buttonEditorEmpty");
+    els.selectedLabel.textContent = t("selected");
+    if (!selectedButtonId) els.selectedButtonLabel.textContent = t("notSelected");
+    els.buttonPromptLabel.textContent = t("promptField");
+    els.buttonPromptInput.placeholder = t("promptFieldPlaceholder");
+    els.buttonNameLabel.textContent = t("buttonName");
+    els.buttonEnableLabel.textContent = t("enableButton");
+    els.deleteButtonButton.textContent = t("deleteButton");
+    els.dataTitle.textContent = t("data");
+    els.exportButton.textContent = t("export");
+    els.importButton.textContent = t("import");
+    els.singleCopyTitle.textContent = t("singleCopyTitle");
+    els.copyBoardHint.textContent = t("copyBoardHint");
+    els.addSheetButton.setAttribute("title", t("sheetManager"));
+    els.addSheetButton.setAttribute("aria-label", t("sheetManager"));
+    els.editAddSheetButton.setAttribute("title", t("sheetManager"));
+    els.editAddSheetButton.setAttribute("aria-label", t("sheetManager"));
+    els.languageJaButton.classList.toggle("is-active", currentLanguage === "ja");
+    els.languageEnButton.classList.toggle("is-active", currentLanguage === "en");
+    if (!els.saveStatus.textContent || els.saveStatus.textContent === TEXT.saved.ja || els.saveStatus.textContent === TEXT.saved.en) {
+      els.saveStatus.textContent = t("saved");
+    }
   }
 
   function applySavedOutputWidth() {
@@ -266,23 +447,23 @@
       sheets: [
         {
           id: "sheet-common",
-          name: "共通",
+          name: t("commonSheet"),
           order: 1,
           columns: 6,
           rows: 4,
           buttons: [
             {
               id: createId("btn"),
-              name: "役割指定",
-              prompt: "あなたは専門的な編集者です。",
+              name: t("defaultRoleName"),
+              prompt: t("defaultRolePrompt"),
               enabled: false,
               row: 1,
               column: 1,
             },
             {
               id: createId("btn"),
-              name: "出力形式",
-              prompt: "出力は見出しと箇条書きを使って、読みやすく整理してください。",
+              name: t("defaultFormatName"),
+              prompt: t("defaultFormatPrompt"),
               enabled: false,
               row: 1,
               column: 2,
@@ -291,16 +472,16 @@
           copyButtons: [
             {
               id: createId("copy"),
-              name: "役割指定",
-              prompt: "あなたは専門的な編集者です。",
+              name: t("defaultRoleName"),
+              prompt: t("defaultRolePrompt"),
               enabled: false,
               row: 1,
               column: 1,
             },
             {
               id: createId("copy"),
-              name: "出力形式",
-              prompt: "出力は見出しと箇条書きを使って、読みやすく整理してください。",
+              name: t("defaultFormatName"),
+              prompt: t("defaultFormatPrompt"),
               enabled: false,
               row: 1,
               column: 2,
@@ -321,7 +502,7 @@
     const parsedBackup = parseAndValidate(backup);
     if (parsedBackup.ok) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(parsedBackup.value));
-      showToastSoon("自動復旧しました");
+      showToastSoon(t("autoRecovered"));
       return parsedBackup.value;
     }
 
@@ -361,7 +542,7 @@
         : duplicateButtonsForCopy(normalizedButtons);
       return {
         id: safeString(sheet.id) || createId("sheet"),
-        name: safeString(sheet.name) || `シート${index + 1}`,
+        name: safeString(sheet.name) || `${t("sheetPrefix")}${index + 1}`,
         order: Number.isFinite(Number(sheet.order)) ? Number(sheet.order) : index + 1,
         columns,
         rows,
@@ -395,7 +576,7 @@
       const column = clampNumber(button.column, 1, 1, columns);
       return {
         id: safeString(button.id) || createId(idPrefix),
-        name: safeString(button.name) || "新規プロンプト",
+        name: safeString(button.name) || t("newPrompt"),
         prompt: safeString(button.prompt),
         enabled: Boolean(button.enabled),
         row,
@@ -437,22 +618,22 @@
 
   function saveNow() {
     try {
-      setSaveStatus("保存中", "saving");
+      setSaveStatus(t("saving"), "saving");
       const normalized = normalizeState(state);
       const next = JSON.stringify(normalized);
       const previous = localStorage.getItem(STORAGE_KEY);
       if (previous) localStorage.setItem(BACKUP_KEY, previous);
       localStorage.setItem(STORAGE_KEY, next);
-      setSaveStatus("保存済み", "");
+      setSaveStatus(t("saved"), "");
     } catch (error) {
       console.error(error);
-      setSaveStatus("保存失敗", "error");
-      showToast("保存に失敗しました");
+      setSaveStatus(t("saveError"), "error");
+      showToast(t("saveFailedToast"));
     }
   }
 
   function scheduleSave() {
-    setSaveStatus("保存中", "saving");
+    setSaveStatus(t("saving"), "saving");
     window.clearTimeout(saveTimer);
     saveTimer = window.setTimeout(saveNow, 220);
   }
@@ -655,7 +836,7 @@
     els.buttonEditorEmpty.hidden = Boolean(selected);
 
     if (selected) {
-      els.selectedButtonLabel.textContent = `${selectedArea === "copy" ? "下部" : "上部"}: ${selected.name}`;
+      els.selectedButtonLabel.textContent = `${selectedArea === "copy" ? t("selectedAreaCopy") : t("selectedAreaBuilder")}: ${selected.name}`;
       els.buttonNameInput.value = selected.name;
       els.buttonPromptInput.value = selected.prompt;
       els.buttonEnabledInput.checked = selected.enabled;
@@ -678,9 +859,9 @@
 
     const joinMode = normalizeOutputJoinMode(state.outputJoinMode);
     els.outputJoinModeToggle.checked = joinMode === OUTPUT_JOIN_NEWLINE;
-    els.outputJoinModeText.textContent = joinMode === OUTPUT_JOIN_NEWLINE ? "改行" : "連結";
+    els.outputJoinModeText.textContent = joinMode === OUTPUT_JOIN_NEWLINE ? t("joinNewline") : t("joinInline");
     els.outputText.value = blocks.join(joinMode === OUTPUT_JOIN_NEWLINE ? "\n" : "");
-    els.outputSummary.textContent = `${enabledButtons.length}個のプロンプトを使用中`;
+    els.outputSummary.textContent = t("promptCount", { count: enabledButtons.length });
     els.resetButton.disabled = !sheet.buttons.some((button) => button.enabled);
   }
 
@@ -744,9 +925,9 @@
   }
 
   function addSheet() {
-    const name = window.prompt("新しいシート名", "新規シート");
+    const name = window.prompt(t("newSheetPrompt"), t("newSheetDefault"));
     if (name === null) return;
-    const trimmed = name.trim() || "新規シート";
+    const trimmed = name.trim() || t("newSheetDefault");
     const maxOrder = Math.max(...state.sheets.map((sheet) => sheet.order), 0);
     const sheet = {
       id: createId("sheet"),
@@ -766,19 +947,19 @@
 
   function renameActiveSheet() {
     const sheet = getActiveSheet();
-    const name = window.prompt("シート名", sheet.name);
+    const name = window.prompt(t("sheetNamePrompt"), sheet.name);
     if (name === null) return;
     const trimmed = name.trim();
-    if (!trimmed) return showToast("シート名は空にできません");
+    if (!trimmed) return showToast(t("sheetNameEmpty"));
     sheet.name = trimmed;
     scheduleSave();
     render();
   }
 
   function deleteActiveSheet() {
-    if (state.sheets.length <= 1) return showToast("最後の1シートは削除できません");
+    if (state.sheets.length <= 1) return showToast(t("lastSheetDeleteBlocked"));
     const sheet = getActiveSheet();
-    const ok = window.confirm(`${sheet.name} を削除します。保存済みのボタンも削除されます。よろしいですか。`);
+    const ok = window.confirm(t("deleteSheetConfirm", { name: sheet.name }));
     if (!ok) return;
     state.sheets = state.sheets.filter((item) => item.id !== sheet.id);
     state.sheets = sortSheets(state.sheets).map((item, index) => ({ ...item, order: index + 1 }));
@@ -795,7 +976,7 @@
     if (findButtonAt(buttons, row, column)) return;
     const button = {
       id: createId(area === "copy" ? "copy" : "btn"),
-      name: "新規プロンプト",
+      name: t("newPrompt"),
       prompt: "",
       enabled: false,
       row,
@@ -814,7 +995,7 @@
     const sheet = getActiveSheet();
     const button = getButtonList(sheet, selectedArea).find((item) => item.id === selectedButtonId);
     if (!button) return;
-    button.name = els.buttonNameInput.value.trim() || "新規プロンプト";
+    button.name = els.buttonNameInput.value.trim() || t("newPrompt");
     button.prompt = els.buttonPromptInput.value;
     button.enabled = els.buttonEnabledInput.checked;
     scheduleSave();
@@ -828,7 +1009,7 @@
     const buttons = getButtonList(sheet, selectedArea);
     const button = buttons.find((item) => item.id === selectedButtonId);
     if (!button) return;
-    const ok = window.confirm(`${button.name} を削除します。格納プロンプトも削除されます。よろしいですか。`);
+    const ok = window.confirm(t("deleteButtonConfirm", { name: button.name }));
     if (!ok) return;
     setButtonList(sheet, selectedArea, buttons.filter((item) => item.id !== selectedButtonId));
     selectedButtonId = null;
@@ -873,14 +1054,14 @@
     const hasOutOfRange = allButtons.some((button) => button.column > nextColumns || button.row > nextRows);
 
     if (hasOutOfRange) {
-      const ok = window.confirm("範囲外になるボタンがあります。可能な限り空きセルへ移動して縮小します。よろしいですか。");
+      const ok = window.confirm(t("resizeConfirm"));
       if (!ok) return render();
     }
 
     const movedButtons = fitButtonsIntoGrid(sheet.buttons, nextColumns, nextRows);
     const movedCopyButtons = fitButtonsIntoGrid(sheet.copyButtons, nextColumns, nextRows);
     if (!movedButtons || !movedCopyButtons) {
-      showToast("ボタン数が多いため、このサイズには縮小できません");
+      showToast(t("resizeTooMany"));
       return render();
     }
 
@@ -928,18 +1109,18 @@
 
   function resetActiveSheet() {
     const sheet = getActiveSheet();
-    if (!sheet.buttons.some((button) => button.enabled)) return showToast("リセット対象がありません");
-    const ok = window.confirm("現在シートのON状態を全てOFFにし、生成エリアを空にします。よろしいですか。");
+    if (!sheet.buttons.some((button) => button.enabled)) return showToast(t("resetTargetMissing"));
+    const ok = window.confirm(t("resetConfirm"));
     if (!ok) return;
     sheet.buttons = sheet.buttons.map((button) => ({ ...button, enabled: false }));
     scheduleSave();
     render();
-    showToast("リセットしました");
+    showToast(t("resetDone"));
   }
 
   async function copyOutput() {
     const text = els.outputText.value;
-    if (!text.trim()) return showToast("生成エリアは空です");
+    if (!text.trim()) return showToast(t("outputEmpty"));
 
     try {
       if (navigator.clipboard && window.isSecureContext) {
@@ -950,23 +1131,23 @@
         document.execCommand("copy");
         window.getSelection().removeAllRanges();
       }
-      showToast("コピーしました");
+      showToast(t("copied"));
     } catch (error) {
       console.error(error);
-      showToast("コピーに失敗しました。生成エリアを選択してコピーしてください");
+      showToast(t("copyFailedOutput"));
     }
   }
 
   async function copyButtonPrompt(button) {
     const text = button.prompt.trim();
-    if (!text) return showToast("このボタンのプロンプトは空です");
+    if (!text) return showToast(t("buttonPromptEmpty"));
 
     try {
       await writeClipboardText(text);
-      showToast(`${button.name} をコピーしました`);
+      showToast(t("buttonCopied", { name: button.name }));
     } catch (error) {
       console.error(error);
-      showToast("コピーに失敗しました");
+      showToast(t("copyFailed"));
     }
   }
 
@@ -999,7 +1180,7 @@
     link.click();
     link.remove();
     URL.revokeObjectURL(url);
-    showToast("エクスポートしました");
+    showToast(t("exported"));
   }
 
   function importData(event) {
@@ -1011,7 +1192,7 @@
     reader.onload = () => {
       try {
         const imported = normalizeState(JSON.parse(String(reader.result || "")));
-        const ok = window.confirm("現在のデータをインポート内容で置き換えます。実行前に現在データをバックアップします。よろしいですか。");
+        const ok = window.confirm(t("importConfirm"));
         if (!ok) return;
         const previous = localStorage.getItem(STORAGE_KEY);
         if (previous) localStorage.setItem(BACKUP_KEY, previous);
@@ -1019,10 +1200,10 @@
         selectedButtonId = null;
         saveNow();
         render();
-        showToast("インポートしました");
+        showToast(t("imported"));
       } catch (error) {
         console.error(error);
-        showToast("インポートできません。不正なJSONです");
+        showToast(t("importInvalid"));
       }
     };
     reader.readAsText(file, "utf-8");

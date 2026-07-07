@@ -3,105 +3,109 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AIプロンプト生成 | Banana Metal</title>
+  <title>Prompt Manager | Banana Metal</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="styles.css?v=20260702-steampunk-theme">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div class="app-shell">
     <header class="topbar">
       <div class="brand-block">
-        <h1>AIプロンプト生成</h1>
-        <p>Style、Lyrics、Exclude用の部品を整理し、ブラウザ内で組み立てる管理ツールです</p>
+        <h1 id="appTitle"></h1>
+        <p id="appLead"></p>
       </div>
       <div class="top-actions">
-        <a class="app-back-link" href="/apps/">Appsへ戻る</a>
-        <span id="saveStatus" class="save-status" aria-live="polite">保存済み</span>
+        <div class="language-toggle" aria-label="Language">
+          <button id="languageJaButton" class="language-toggle-button" type="button">日本語</button>
+          <button id="languageEnButton" class="language-toggle-button" type="button">English</button>
+        </div>
+        <a id="backToAppsLink" class="app-back-link" href="/apps/"></a>
+        <span id="saveStatus" class="save-status" aria-live="polite"></span>
         <label class="edit-toggle">
           <input id="editModeToggle" type="checkbox">
           <span class="toggle-track" aria-hidden="true"></span>
-          <span class="toggle-text">編集モード</span>
+          <span id="editModeLabel" class="toggle-text"></span>
         </label>
       </div>
     </header>
 
-    <nav class="sheet-bar" aria-label="シート">
+    <nav class="sheet-bar" aria-label="Sheets">
       <div id="sheetTabs" class="sheet-tabs"></div>
-      <button id="addSheetButton" class="icon-button" type="button" title="シート追加" aria-label="シート追加">+</button>
+      <button id="addSheetButton" class="icon-button" type="button">+</button>
     </nav>
 
-    <section class="local-note" aria-label="保存について">
-      <p>入力内容はこのブラウザ内の localStorage に保存されます。必要に応じて JSON エクスポートでバックアップしてください。</p>
+    <section class="local-note" aria-label="Storage note">
+      <p id="localNoteText"></p>
     </section>
 
     <main class="content-layout">
-      <section class="output-panel" aria-label="生成エリア">
+      <section class="output-panel" aria-label="Output area">
         <div class="output-header">
           <div>
             <div class="output-heading-row">
-              <h2>生成エリア</h2>
+              <h2 id="outputAreaTitle"></h2>
               <div class="output-actions">
-                <button id="copyButton" type="button" class="primary-button">コピー</button>
-                <button id="resetButton" type="button" class="secondary-button">シートをリセット</button>
+                <button id="copyButton" type="button" class="primary-button"></button>
+                <button id="resetButton" type="button" class="secondary-button"></button>
               </div>
               <label class="join-mode-toggle" for="outputJoinModeToggle">
-                <span class="join-mode-label">ボタン間を</span>
+                <span id="joinModeLabel" class="join-mode-label"></span>
                 <input id="outputJoinModeToggle" type="checkbox" checked>
                 <span class="toggle-track" aria-hidden="true"></span>
-                <span id="outputJoinModeText" class="toggle-text">改行</span>
+                <span id="outputJoinModeText" class="toggle-text"></span>
               </label>
             </div>
-            <p id="outputSummary">0個のプロンプトを使用中</p>
+            <p id="outputSummary"></p>
           </div>
         </div>
-        <textarea id="outputText" readonly spellcheck="false" aria-label="生成されたプロンプト"></textarea>
+        <textarea id="outputText" readonly spellcheck="false" aria-label="Generated prompt"></textarea>
       </section>
 
-      <section class="sheet-manager-panel" aria-label="シート管理エリア">
+      <section class="sheet-manager-panel" aria-label="Sheet manager">
         <div class="board-toolbar">
           <div>
-            <h2>シート管理</h2>
-            <p>編集モード中はここでシート追加、切り替え、並べ替え、名前変更を行います</p>
+            <h2 id="sheetManagerTitle"></h2>
+            <p id="sheetManagerLead"></p>
           </div>
-          <button id="editAddSheetButton" class="icon-button" type="button" title="シート追加" aria-label="シート追加">+</button>
+          <button id="editAddSheetButton" class="icon-button" type="button">+</button>
         </div>
         <div id="editSheetTabs" class="sheet-manager-tabs"></div>
         <div class="sheet-manager-actions">
-          <button id="editRenameSheetButton" type="button" class="secondary-button">名前変更</button>
-          <button id="editDeleteSheetButton" type="button" class="danger-button">削除</button>
+          <button id="editRenameSheetButton" type="button" class="secondary-button"></button>
+          <button id="editDeleteSheetButton" type="button" class="danger-button"></button>
         </div>
         <label class="theme-toggle" for="steampunkThemeToggle">
-          <span class="theme-toggle-label">スチームパンク</span>
+          <span id="themeToggleLabel" class="theme-toggle-label"></span>
           <input id="steampunkThemeToggle" type="checkbox">
           <span class="toggle-track" aria-hidden="true"></span>
           <span id="themeToggleText" class="toggle-text">OFF</span>
         </label>
-        <p class="small-note">シートタブはドラッグで順序変更できます。</p>
+        <p id="sheetDragNote" class="small-note"></p>
       </section>
 
       <div
         id="outputResizeHandle"
         class="column-resizer"
         role="separator"
-        aria-label="生成エリアとボタンエリアの幅を調整"
+        aria-label="Resize output and button areas"
         aria-orientation="vertical"
         tabindex="0"
       ></div>
 
       <div class="right-column">
         <div class="workspace">
-          <section class="board-panel" aria-label="プロンプトボード">
+          <section class="board-panel" aria-label="Prompt board">
             <div class="board-toolbar">
               <div>
                 <h2 id="activeSheetTitle">共通</h2>
-                <p id="boardHint">ボタンを押すとON/OFFが切り替わります</p>
+                <p id="boardHint"></p>
               </div>
               <div class="grid-controls edit-only">
-                <label>列
+                <label><span id="columnsLabel"></span>
                   <input id="columnsInput" type="number" min="1" max="20" inputmode="numeric">
                 </label>
                 <span class="multiply">x</span>
-                <label>行
+                <label><span id="rowsLabel"></span>
                   <input id="rowsInput" type="number" min="1" max="20" inputmode="numeric">
                 </label>
               </div>
@@ -111,59 +115,59 @@
             </div>
           </section>
 
-          <aside id="editPanel" class="edit-panel" aria-label="編集パネル">
+          <aside id="editPanel" class="edit-panel" aria-label="Edit panel">
             <section class="panel-section sheet-management-section">
-              <h2>シート管理</h2>
+              <h2 id="editSheetTitle"></h2>
               <div class="button-row">
-                <button id="renameSheetButton" type="button" class="secondary-button">名前変更</button>
-                <button id="deleteSheetButton" type="button" class="danger-button">削除</button>
+                <button id="renameSheetButton" type="button" class="secondary-button"></button>
+                <button id="deleteSheetButton" type="button" class="danger-button"></button>
               </div>
-              <p class="small-note">編集モード中はシートタブをドラッグして順序を変更できます。</p>
+              <p id="editSheetNote" class="small-note"></p>
             </section>
 
             <section class="panel-section">
-              <h2>プロンプト割り当て</h2>
-              <div id="buttonEditorEmpty" class="empty-editor">ボタンを選択すると、貼り付け用の入力欄が表示されます。空セルクリックで追加できます。</div>
+              <h2 id="promptAssignTitle"></h2>
+              <div id="buttonEditorEmpty" class="empty-editor"></div>
               <div id="buttonEditor" class="button-editor" hidden>
                 <div class="assignment-target">
-                  <span>選択中</span>
-                  <strong id="selectedButtonLabel">未選択</strong>
+                  <span id="selectedLabel"></span>
+                  <strong id="selectedButtonLabel"></strong>
                 </div>
-                <label class="field-label primary-field-label" for="buttonPromptInput">貼り付け用プロンプト欄</label>
-                <textarea id="buttonPromptInput" class="paste-field" rows="11" placeholder="ここにプロンプトを貼り付けると、選択中のボタンへ自動保存されます。"></textarea>
-                <label class="field-label" for="buttonNameInput">ボタン名</label>
+                <label id="buttonPromptLabel" class="field-label primary-field-label" for="buttonPromptInput"></label>
+                <textarea id="buttonPromptInput" class="paste-field" rows="11"></textarea>
+                <label id="buttonNameLabel" class="field-label" for="buttonNameInput"></label>
                 <input id="buttonNameInput" type="text" maxlength="80">
                 <label class="check-row">
                   <input id="buttonEnabledInput" type="checkbox">
-                  <span>ONにする</span>
+                  <span id="buttonEnableLabel"></span>
                 </label>
-                <button id="deleteButtonButton" type="button" class="danger-button full-width">このボタンを削除</button>
+                <button id="deleteButtonButton" type="button" class="danger-button full-width"></button>
               </div>
             </section>
 
             <section class="panel-section">
-              <h2>データ</h2>
+              <h2 id="dataTitle"></h2>
               <div class="button-row">
-                <button id="exportButton" type="button" class="secondary-button">エクスポート</button>
-                <button id="importButton" type="button" class="secondary-button">インポート</button>
+                <button id="exportButton" type="button" class="secondary-button"></button>
+                <button id="importButton" type="button" class="secondary-button"></button>
               </div>
               <input id="importFileInput" type="file" accept="application/json,.json" hidden>
             </section>
           </aside>
         </div>
 
-        <section class="quick-copy-panel" aria-label="個別コピー用ボタンエリア">
+        <section class="quick-copy-panel" aria-label="Single copy button area">
           <div class="board-toolbar">
             <div>
-              <h2>個別コピー用ボタンエリア</h2>
-              <p id="copyBoardHint">ボタンを押すと、そのボタンのプロンプトだけをコピーします</p>
+              <h2 id="singleCopyTitle"></h2>
+              <p id="copyBoardHint"></p>
             </div>
             <div class="grid-controls edit-only">
-              <label>列
+              <label><span id="copyColumnsLabel"></span>
                 <input id="copyColumnsInput" type="number" min="1" max="20" inputmode="numeric">
               </label>
               <span class="multiply">x</span>
-              <label>行
+              <label><span id="copyRowsLabel"></span>
                 <input id="copyRowsInput" type="number" min="1" max="20" inputmode="numeric">
               </label>
             </div>
@@ -177,6 +181,7 @@
   </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=20260702-steampunk-theme"></script>
+  <script src="/shared-language.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

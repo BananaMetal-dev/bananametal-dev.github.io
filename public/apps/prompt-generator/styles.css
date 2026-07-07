@@ -30,7 +30,17 @@
   --cell-h: 68px;
   --gap: 7px;
   --output-panel-width: 360px;
-  font-family: "Yu Gothic UI", "Meiryo", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-ja: "Yu Gothic UI", "Meiryo", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-en: "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif;
+  font-family: var(--font-ja);
+}
+
+html[data-lang="en"] {
+  font-family: var(--font-en);
+}
+
+html[data-lang="ja"] {
+  font-family: var(--font-ja);
 }
 
 * {
@@ -42,6 +52,7 @@ body {
   min-width: 980px;
   background: var(--bg);
   color: var(--text);
+  font-weight: 700;
 }
 
 button,
@@ -118,6 +129,31 @@ button:disabled {
   gap: 16px;
   flex-wrap: wrap;
   justify-content: flex-end;
+}
+
+.language-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: #fff;
+}
+
+.language-toggle-button {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.language-toggle-button.is-active {
+  color: #fff;
+  background: var(--accent);
 }
 
 .save-status {

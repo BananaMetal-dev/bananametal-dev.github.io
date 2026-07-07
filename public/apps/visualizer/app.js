@@ -1,6 +1,87 @@
 (() => {
   "use strict";
 
+  const languageApi = window.BananaMetalLanguage;
+  let currentLanguage = languageApi?.getLanguage?.() === "en" ? "en" : "ja";
+  const LOCALIZED = {
+    pageTitle: { ja: "Banana Visualizer | Banana Metal", en: "Banana Visualizer | Banana Metal" },
+    brandNote: {
+      ja: "Browser render Ready. 画像・音声・生成動画はサーバーへ送信しません。 / Images, audio, and generated videos are not sent to the server.",
+      en: "Browser render Ready. Images, audio, and generated videos are not sent to the server.",
+    },
+    apps: { ja: "Apps", en: "Apps" },
+    loadProject: { ja: "プロジェクト読込", en: "Load Project" },
+    saveProject: { ja: "プロジェクト保存", en: "Save Project" },
+    reset: { ja: "リセット", en: "Reset" },
+    assets: { ja: "Assets", en: "Assets" },
+    localOnly: { ja: "ローカル読み込みのみ", en: "Local files only" },
+    stillImage: { ja: "静止画像", en: "Still Image" },
+    audioTrack: { ja: "音声トラック", en: "Audio Track" },
+    watermarkIcon: { ja: "ウォーターマーク", en: "Watermark Icon" },
+    file: { ja: "ファイル", en: "File" },
+    folder: { ja: "フォルダ", en: "Folder" },
+    project: { ja: "Project", en: "Project" },
+    silentDuration: { ja: "無音尺", en: "Silent Duration" },
+    fullAudioLength: { ja: "音声フル尺", en: "Full Audio Length" },
+    durationSeconds: { ja: "秒数", en: "Duration Seconds" },
+    canvas: { ja: "Canvas", en: "Canvas" },
+    imageSize: { ja: "画像サイズ", en: "Image Size" },
+    aspectRatio: { ja: "アスペクト比", en: "Aspect Ratio" },
+    frameRate: { ja: "フレームレート", en: "Frame Rate" },
+    backgroundFit: { ja: "背景フィット", en: "Background Fit" },
+    crop: { ja: "クロップ", en: "Crop" },
+    letterbox: { ja: "レターボックス", en: "Letterbox" },
+    backgroundZoom: { ja: "背景ズーム", en: "Background Zoom" },
+    preview: { ja: "Preview", en: "Preview" },
+    playPreview: { ja: "プレビュー再生", en: "Play Preview" },
+    render: { ja: "Render", en: "Render" },
+    browserOnly: { ja: "Browser only", en: "Browser only" },
+    visualizer: { ja: "Visualizer", en: "Visualizer" },
+    dragHint: { ja: "プレビュー上でドラッグして移動", en: "Drag on the preview to move it." },
+    response: { ja: "Response", en: "Response" },
+    color: { ja: "Color", en: "Color" },
+    barCount: { ja: "バー本数", en: "Bar Count" },
+    size: { ja: "サイズ", en: "Size" },
+    watermark: { ja: "Watermark", en: "Watermark" },
+    opacity: { ja: "透明度", en: "Opacity" },
+    watermarkDragHint: { ja: "プレビュー上でドラッグして位置を変更", en: "Drag on the preview to move it." },
+    export: { ja: "Export", en: "Export" },
+    startRender: { ja: "書き出し開始", en: "Start Render" },
+    stop: { ja: "停止", en: "Stop" },
+    mp4Next: { ja: "MP4は次段階", en: "MP4 Next" },
+    download: { ja: "ダウンロード", en: "Download" },
+    outputName: { ja: "出力名", en: "Output Name" },
+    ready: { ja: "Ready", en: "Ready" },
+    noOutput: { ja: "No output yet", en: "No output yet" },
+    loaded: { ja: "読み込み済み", en: "Loaded" },
+    notLoaded: { ja: "未読込み", en: "Not loaded" },
+    mp4Later: { ja: "MP4変換は次段階です。", en: "MP4 conversion is planned for a later step." },
+    supportedFileMissing: { ja: "{source}: 対応する{kind}ファイルが見つかりません", en: "{source}: supported {kind} file not found" },
+    importing: { ja: "{name} を読み込み中", en: "Importing {name}" },
+    imageImported: { ja: "静止画像を読み込みました", en: "Still image imported" },
+    audioImported: { ja: "音声トラックを読み込みました", en: "Audio track imported" },
+    watermarkImported: { ja: "ウォーターマークを読み込みました", en: "Watermark icon imported" },
+    imageRequired: { ja: "静止画像は必須です。", en: "Still image is required." },
+    mediaRecorderUnavailable: { ja: "このブラウザでは MediaRecorder を利用できません。", en: "MediaRecorder is not available in this browser." },
+    rendering: { ja: "Rendering", en: "Rendering" },
+    renderingMeta: { ja: "Browser rendering in progress", en: "Rendering in browser" },
+    renderCompleted: { ja: "書き出しが完了しました", en: "Render completed" },
+    projectExported: { ja: "プロジェクトJSONを書き出しました", en: "Project JSON exported" },
+    projectLoaded: { ja: "プロジェクトを読み込みました。メディアファイルをローカルで再接続してください。", en: "Project loaded. Reattach media files locally." },
+    projectReset: { ja: "プロジェクトを初期化しました", en: "Project reset" },
+    large: { ja: "大", en: "Large" },
+    medium: { ja: "中", en: "Medium" },
+    small: { ja: "小", en: "Small" },
+    image: { ja: "画像", en: "image" },
+    audio: { ja: "音声", en: "audio" },
+    watermarkKind: { ja: "ウォーターマーク", en: "watermark" },
+  };
+
+  function t(key, tokens = {}) {
+    const template = LOCALIZED[key]?.[currentLanguage] ?? LOCALIZED[key]?.ja ?? key;
+    return template.replace(/\{(\w+)\}/g, (_, token) => String(tokens[token] ?? ""));
+  }
+
   const ACCEPTED_EXTENSIONS = {
     image: [".png", ".jpg", ".jpeg", ".webp"],
     audio: [".mp3", ".wav", ".ogg", ".m4a"],
@@ -25,43 +106,43 @@
       {
         id: "vertical_bars",
         kind: "visualizer_shape",
-        label: "下部固定・縦バー",
+        label: { ja: "下部固定・縦バー", en: "Bottom Fixed Vertical Bars" },
         defaults: { barCount: 120, topLine: true }
       },
       {
         id: "line_spectrum",
         kind: "visualizer_shape",
-        label: "折れ線スペクトラム",
+        label: { ja: "折れ線スペクトラム", en: "Line Spectrum" },
         defaults: { barCount: 120, topLine: true }
       },
       {
         id: "radial_bars",
         kind: "visualizer_shape",
-        label: "放射状バー",
+        label: { ja: "放射状バー", en: "Radial Bars" },
         defaults: { barCount: 128, topLine: false }
       },
       {
         id: "filled_spectrum",
         kind: "visualizer_shape",
-        label: "塗りスペクトラム",
+        label: { ja: "塗りスペクトラム", en: "Filled Spectrum" },
         defaults: { barCount: 120, topLine: false }
       },
       {
         id: "led_bars",
         kind: "visualizer_shape",
-        label: "LEDバー",
+        label: { ja: "LEDバー", en: "LED Bars" },
         defaults: { barCount: 96, topLine: false }
       },
       {
         id: "ring_waveform",
         kind: "visualizer_shape",
-        label: "リング波形",
+        label: { ja: "リング波形", en: "Ring Waveform" },
         defaults: { barCount: 160, topLine: false }
       },
       {
         id: "low_end_emphasis",
         kind: "response_profile",
-        label: "低域強調",
+        label: { ja: "低域強調", en: "Low-End Emphasis" },
         defaults: {
           lowGain: 1.4,
           midGain: 1,
@@ -73,13 +154,13 @@
       {
         id: "white_ice_blue",
         kind: "color",
-        label: "白＋アイスブルー",
+        label: { ja: "白＋アイスブルー", en: "White + Ice Blue" },
         defaults: { base: "#FFFFFF", accent: "#DDF6FF", peak: "#FFFFFF" }
       },
       {
         id: "monochrome",
         kind: "color",
-        label: "モノクロ・無彩色",
+        label: { ja: "モノクロ・無彩色", en: "Monochrome" },
         defaults: { base: "#BFC4C8", accent: "#F6F8F9", peak: "#FFFFFF" }
       }
     ]
@@ -94,6 +175,41 @@
 
   const els = {
     workspace: document.getElementById("workspace"),
+    languageJaButton: document.getElementById("languageJaButton"),
+    languageEnButton: document.getElementById("languageEnButton"),
+    brandNote: document.getElementById("brandNote"),
+    appsLink: document.getElementById("appsLink"),
+    assetsHeading: document.getElementById("assetsHeading"),
+    assetsHeadingNote: document.getElementById("assetsHeadingNote"),
+    imageAssetLabel: document.getElementById("imageAssetLabel"),
+    audioAssetLabel: document.getElementById("audioAssetLabel"),
+    watermarkAssetLabel: document.getElementById("watermarkAssetLabel"),
+    projectSummary: document.getElementById("projectSummary"),
+    canvasSummary: document.getElementById("canvasSummary"),
+    durationLabel: document.getElementById("durationLabel"),
+    imageSizeLabel: document.getElementById("imageSizeLabel"),
+    aspectRatioLabel: document.getElementById("aspectRatioLabel"),
+    frameRateLabel: document.getElementById("frameRateLabel"),
+    backgroundFitLabel: document.getElementById("backgroundFitLabel"),
+    backgroundZoomLabel: document.getElementById("backgroundZoomLabel"),
+    previewLabel: document.getElementById("previewLabel"),
+    renderHeading: document.getElementById("renderHeading"),
+    renderHeadingNote: document.getElementById("renderHeadingNote"),
+    visualizerSummary: document.getElementById("visualizerSummary"),
+    visualizerHint: document.getElementById("visualizerHint"),
+    visualizerShapeLabel: document.getElementById("visualizerShapeLabel"),
+    responseLabel: document.getElementById("responseLabel"),
+    colorLabel: document.getElementById("colorLabel"),
+    barCountLabel: document.getElementById("barCountLabel"),
+    visualizerSizeLabel: document.getElementById("visualizerSizeLabel"),
+    watermarkSummary: document.getElementById("watermarkSummary"),
+    watermarkHint: document.getElementById("watermarkHint"),
+    watermarkToggleLabel: document.getElementById("watermarkToggleLabel"),
+    watermarkSizeLabel: document.getElementById("watermarkSizeLabel"),
+    watermarkOpacityLabel: document.getElementById("watermarkOpacityLabel"),
+    watermarkDragHint: document.getElementById("watermarkDragHint"),
+    exportSummary: document.getElementById("exportSummary"),
+    outputNameLabel: document.getElementById("outputNameLabel"),
     leftResizer: document.getElementById("leftResizer"),
     rightResizer: document.getElementById("rightResizer"),
     loadProjectButton: document.getElementById("loadProjectButton"),
@@ -189,13 +305,14 @@
     renderStopTimer: 0,
     recorder: null,
     recordedChunks: [],
-    status: "Ready",
-    resultMeta: "No output yet"
+    status: t("ready"),
+    resultMeta: t("noOutput")
   };
 
   init();
 
   function init() {
+    bindLanguageToggle();
     buildPresetButtons();
     buildCatalogSelects();
     bindTopbar();
@@ -208,8 +325,101 @@
     window.addEventListener("resize", drawPreview);
     applyWorkspaceWidths();
     syncFormFromState();
+    applyStaticTexts();
     renderStaticState();
     drawPreview();
+  }
+
+  function bindLanguageToggle() {
+    els.languageJaButton.addEventListener("click", () => setLanguage("ja"));
+    els.languageEnButton.addEventListener("click", () => setLanguage("en"));
+    languageApi?.subscribe?.((language) => {
+      currentLanguage = language === "en" ? "en" : "ja";
+      applyStaticTexts();
+      buildCatalogSelects();
+      syncFormFromState();
+      updateAssetStates();
+      drawPreview();
+    });
+    setLanguage(currentLanguage);
+  }
+
+  function setLanguage(language) {
+    currentLanguage = language === "en" ? "en" : "ja";
+    languageApi?.setLanguage?.(currentLanguage);
+    applyStaticTexts();
+  }
+
+  function entryLabel(entry) {
+    if (typeof entry.label === "string") return entry.label;
+    return entry.label[currentLanguage] || entry.label.ja;
+  }
+
+  function applyStaticTexts() {
+    document.title = t("pageTitle");
+    els.brandNote.textContent = t("brandNote");
+    els.appsLink.textContent = t("apps");
+    els.loadProjectButton.textContent = t("loadProject");
+    els.saveProjectButton.textContent = t("saveProject");
+    els.resetProjectButton.textContent = t("reset");
+    els.assetsHeading.textContent = t("assets");
+    els.assetsHeadingNote.textContent = t("localOnly");
+    els.imageAssetLabel.textContent = t("stillImage");
+    els.audioAssetLabel.textContent = t("audioTrack");
+    els.watermarkAssetLabel.textContent = t("watermarkIcon");
+    els.imageFileButton.textContent = t("file");
+    els.imageFolderButton.textContent = t("folder");
+    els.audioFileButton.textContent = t("file");
+    els.audioFolderButton.textContent = t("folder");
+    els.watermarkFileButton.textContent = t("file");
+    els.watermarkFolderButton.textContent = t("folder");
+    els.projectSummary.textContent = t("project");
+    els.timelineSilentButton.textContent = t("silentDuration");
+    els.timelineAudioButton.textContent = t("fullAudioLength");
+    els.durationLabel.textContent = t("durationSeconds");
+    els.canvasSummary.textContent = t("canvas");
+    els.imageSizeLabel.textContent = t("imageSize");
+    els.aspectRatioLabel.textContent = t("aspectRatio");
+    els.frameRateLabel.textContent = t("frameRate");
+    els.backgroundFitLabel.textContent = t("backgroundFit");
+    els.fitCropButton.textContent = t("crop");
+    els.fitLetterboxButton.textContent = t("letterbox");
+    els.backgroundZoomLabel.textContent = t("backgroundZoom");
+    els.previewLabel.textContent = t("preview");
+    els.playButton.textContent = t("playPreview");
+    els.renderHeading.textContent = t("render");
+    els.renderHeadingNote.textContent = t("browserOnly");
+    els.visualizerSummary.textContent = t("visualizer");
+    els.visualizerHint.textContent = t("dragHint");
+    els.visualizerShapeLabel.textContent = t("visualizer");
+    els.responseLabel.textContent = t("response");
+    els.colorLabel.textContent = t("color");
+    els.barCountLabel.textContent = t("barCount");
+    els.visualizerSizeLabel.textContent = t("size");
+    els.watermarkSummary.textContent = t("watermark");
+    els.watermarkHint.textContent = t("dragHint");
+    els.watermarkToggleLabel.textContent = t("watermark");
+    els.watermarkSizeLabel.textContent = t("size");
+    els.watermarkOpacityLabel.textContent = t("opacity");
+    els.watermarkDragHint.textContent = t("watermarkDragHint");
+    els.exportSummary.textContent = t("export");
+    els.renderButton.textContent = t("startRender");
+    els.stopButton.textContent = t("stop");
+    els.mp4Button.textContent = t("mp4Next");
+    els.downloadLink.textContent = t("download");
+    els.outputNameLabel.textContent = t("outputName");
+    els.languageJaButton.classList.toggle("is-active", currentLanguage === "ja");
+    els.languageEnButton.classList.toggle("is-active", currentLanguage === "en");
+    Array.from(els.watermarkSizeSelect.options).forEach((option) => {
+      option.textContent = t(option.value);
+    });
+    if (!state.status || state.status === "Ready" || state.status === LOCALIZED.ready.ja) {
+      state.status = t("ready");
+    }
+    if (!state.resultMeta || state.resultMeta === "No output yet" || state.resultMeta === LOCALIZED.noOutput.ja) {
+      state.resultMeta = t("noOutput");
+    }
+    renderStaticState();
   }
 
   function defaultProject() {
@@ -286,13 +496,15 @@
   }
 
   function populateSelect(select, entries) {
+    const selectedValue = select.value;
     select.innerHTML = "";
     entries.forEach((entry) => {
       const option = document.createElement("option");
       option.value = entry.id;
-      option.textContent = entry.label;
+      option.textContent = entryLabel(entry);
       select.appendChild(option);
     });
+    if (selectedValue) select.value = selectedValue;
   }
 
   function bindTopbar() {
@@ -302,7 +514,7 @@
     els.resetProjectButton.addEventListener("click", resetProject);
     els.renderButton.addEventListener("click", renderProject);
     els.stopButton.addEventListener("click", stopRender);
-    els.mp4Button.addEventListener("click", () => setStatus("MP4変換は次段階です。"));
+    els.mp4Button.addEventListener("click", () => setStatus(t("mp4Later")));
     els.playButton.addEventListener("click", togglePreview);
   }
 
@@ -525,14 +737,15 @@
   async function importFirstSupported(kind, files, source) {
     const file = firstAcceptedFile(kind, files);
     if (!file) {
-      setStatus(`${source}: supported ${kind} file not found`);
+      const kindLabel = kind === "image" ? t("image") : kind === "audio" ? t("audio") : t("watermarkKind");
+      setStatus(t("supportedFileMissing", { source, kind: kindLabel }));
       return;
     }
     await importAsset(kind, file);
   }
 
   async function importAsset(kind, file) {
-    setStatus(`Importing ${file.name}`);
+    setStatus(t("importing", { name: file.name }));
     revokeAsset(kind);
     state.assets[kind] = {
       originalName: file.name,
@@ -560,11 +773,11 @@
     }
 
     if (kind === "audio") {
-      setStatus("Audio track imported");
+      setStatus(t("audioImported"));
     } else if (kind === "watermark") {
-      setStatus("Watermark icon imported");
+      setStatus(t("watermarkImported"));
     } else {
-      setStatus("Still image imported");
+      setStatus(t("imageImported"));
     }
 
     updateAssetStates();
@@ -781,9 +994,9 @@
     const imageLoaded = Boolean(state.assets.image);
     const audioLoaded = Boolean(state.assets.audio);
     const watermarkLoaded = Boolean(state.assets.watermark);
-    els.imageAssetState.textContent = imageLoaded ? "Loaded" : "Not loaded";
-    els.audioAssetState.textContent = audioLoaded ? "Loaded" : "Not loaded";
-    els.watermarkAssetState.textContent = watermarkLoaded ? "Loaded" : "Not loaded";
+    els.imageAssetState.textContent = imageLoaded ? t("loaded") : t("notLoaded");
+    els.audioAssetState.textContent = audioLoaded ? t("loaded") : t("notLoaded");
+    els.watermarkAssetState.textContent = watermarkLoaded ? t("loaded") : t("notLoaded");
     els.imageAssetState.classList.toggle("is-loaded", imageLoaded);
     els.audioAssetState.classList.toggle("is-loaded", audioLoaded);
     els.watermarkAssetState.classList.toggle("is-loaded", watermarkLoaded);
@@ -863,13 +1076,13 @@
     }
 
     state.isPreviewing = true;
-    els.playButton.textContent = "Pause";
+    els.playButton.textContent = t("stop");
     startAnimation();
   }
 
   function stopPreview() {
     state.isPreviewing = false;
-    els.playButton.textContent = "Play preview";
+    els.playButton.textContent = t("playPreview");
     els.audioElement.pause();
     stopAnimation();
     drawPreview();
@@ -937,11 +1150,11 @@
   async function renderProject() {
     if (state.isRendering) return;
     if (!state.assets.image) {
-      setStatus("Still image is required.");
+      setStatus(t("imageRequired"));
       return;
     }
     if (!window.MediaRecorder) {
-      setStatus("MediaRecorder is not available in this browser.");
+      setStatus(t("mediaRecorderUnavailable"));
       return;
     }
 
@@ -978,9 +1191,9 @@
     els.mp4Button.hidden = true;
     els.downloadLink.hidden = true;
     els.resultVideo.hidden = true;
-    els.playButton.textContent = "Pause";
-    setStatus("Rendering");
-    state.resultMeta = "Rendering in browser";
+    els.playButton.textContent = t("stop");
+    setStatus(t("rendering"));
+    state.resultMeta = t("renderingMeta");
     els.resultMeta.textContent = state.resultMeta;
 
     if (state.assets.audio) {
@@ -1019,7 +1232,7 @@
     els.renderButton.disabled = false;
     els.stopButton.disabled = true;
     els.stopButton.hidden = true;
-    els.playButton.textContent = "Play preview";
+    els.playButton.textContent = t("playPreview");
     stopAnimation();
     drawPreview();
 
@@ -1030,7 +1243,7 @@
     els.downloadLink.hidden = false;
     els.mp4Button.hidden = false;
     els.downloadLink.href = state.urls.output;
-    setStatus("Render completed");
+    setStatus(t("renderCompleted"));
     updatePlaybackText();
   }
 
@@ -1046,7 +1259,7 @@
       URL.revokeObjectURL(state.urls.output);
       state.urls.output = "";
     }
-    state.resultMeta = "No output yet";
+    state.resultMeta = t("noOutput");
     els.resultMeta.textContent = state.resultMeta;
   }
 
@@ -1078,7 +1291,7 @@
       ctx.fillStyle = "rgba(238, 244, 247, 0.86)";
       ctx.font = `${Math.max(14, width * 0.012)}px sans-serif`;
       ctx.textAlign = "center";
-      ctx.fillText("Still image", width / 2, height / 2);
+      ctx.fillText(t("stillImage"), width / 2, height / 2);
     }
 
     const color = getEntry(state.project.visualizer.colorId)?.defaults || {};
@@ -1514,7 +1727,7 @@
     link.click();
     link.remove();
     URL.revokeObjectURL(url);
-    setStatus("Project JSON exported");
+    setStatus(t("projectExported"));
   }
 
   async function loadProjectFromFile(event) {
@@ -1553,7 +1766,7 @@
     syncFormFromState();
     renderStaticState();
     drawPreview();
-    setStatus("Project loaded. Reattach media files locally.");
+    setStatus(t("projectLoaded"));
   }
 
   function resetProject() {
@@ -1571,7 +1784,7 @@
     syncFormFromState();
     renderStaticState();
     drawPreview();
-    setStatus("Project reset");
+    setStatus(t("projectReset"));
   }
 
   function updatePlaybackText() {
