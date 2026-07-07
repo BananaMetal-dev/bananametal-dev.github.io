@@ -288,8 +288,9 @@ p {
   display: block;
   width: calc(100% - 40px);
   height: calc(100% - 40px);
-  object-fit: cover;
+  object-fit: contain;
   border-radius: 22px;
+  background: rgba(255, 250, 242, 0.18);
 }
 
 .app-visual-inner {
