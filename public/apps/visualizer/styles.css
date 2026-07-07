@@ -10,7 +10,17 @@
   --accent: #ddf6ff;
   --accent-strong: #ff8d63;
   --shadow: 0 24px 56px rgba(0, 0, 0, 0.35);
-  font-family: "Segoe UI", "Yu Gothic UI", "Meiryo", sans-serif;
+  --font-ja: "Yu Gothic UI", "Meiryo", sans-serif;
+  --font-en: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--font-ja);
+}
+
+html[data-lang="en"] {
+  font-family: var(--font-en);
+}
+
+html[data-lang="ja"] {
+  font-family: var(--font-ja);
 }
 
 html,
@@ -127,6 +137,31 @@ button:disabled {
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
+}
+
+.language-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.language-toggle-button {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.language-toggle-button.is-active {
+  color: #071016;
+  background: linear-gradient(135deg, var(--accent), #8ae9ff);
 }
 
 .tool-button {
