@@ -14,6 +14,7 @@ export type AppEntry = {
   notes: LocalizedText[];
   url?: string;
   previewImage?: string;
+  previewAspectRatio?: string;
 };
 
 export const apps: AppEntry[] = [
@@ -38,6 +39,7 @@ export const apps: AppEntry[] = [
     ],
     url: "/apps/visualizer/",
     previewImage: visualizerPreview,
+    previewAspectRatio: "1074 / 819",
   },
   {
     name: {
@@ -60,6 +62,7 @@ export const apps: AppEntry[] = [
     ],
     url: "/apps/prompt-generator/",
     previewImage: promptManagerPreview,
+    previewAspectRatio: "1065 / 786",
   },
 ];
 

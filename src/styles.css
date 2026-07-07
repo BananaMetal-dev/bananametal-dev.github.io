@@ -275,7 +275,6 @@ p {
   position: relative;
   overflow: hidden;
   border-radius: 26px 26px 0 0;
-  min-height: 180px;
   padding: 20px;
   background:
     radial-gradient(circle at top left, rgba(238, 174, 82, 0.55), transparent 44%),
@@ -294,8 +293,7 @@ p {
 }
 
 .app-visual-inner {
-  height: 100%;
-  min-height: 140px;
+  aspect-ratio: 16 / 9;
   border: 1px dashed rgba(255, 250, 242, 0.24);
   border-radius: 24px;
   display: grid;
