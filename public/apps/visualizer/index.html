@@ -266,6 +266,7 @@
               <button id="stopButton" class="tool-button" type="button" disabled hidden></button>
               <button id="mp4Button" class="tool-button" type="button" disabled hidden></button>
               <a id="downloadLink" class="tool-button primary" download="banana-visualizer-output.webm" hidden></a>
+              <a id="mp4DownloadLink" class="tool-button primary" download="banana-visualizer-output.mp4" hidden></a>
             </div>
             <label class="field">
               <span id="outputNameLabel"></span>
@@ -274,6 +275,7 @@
             <p class="canvas-readout" id="playbackText">00:00 / --:--</p>
             <p id="statusText"></p>
             <code id="resultMeta"></code>
+            <code id="mp4ResultMeta" hidden></code>
             <video id="resultVideo" controls playsinline hidden></video>
           </div>
         </details>
@@ -283,6 +285,8 @@
 
   <audio id="audioElement" preload="auto" hidden></audio>
   <script src="/shared-language.js"></script>
+  <script src="mediabunny.js"></script>
+  <script src="webcodecs-renderer.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
