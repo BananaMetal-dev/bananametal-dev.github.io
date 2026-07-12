@@ -18,6 +18,8 @@ const fingerprintTargets = [
   "favicon.svg",
   "shared-language.js",
   "apps/visualizer/styles.css",
+  "apps/visualizer/mediabunny.js",
+  "apps/visualizer/webcodecs-renderer.js",
   "apps/visualizer/app.js",
   "apps/prompt-generator/styles.css",
   "apps/prompt-generator/app.js",
@@ -71,6 +73,14 @@ for (const htmlFile of htmlFiles) {
     if (originalPath.endsWith("app.js")) {
       html = html.replaceAll(
         new RegExp(`src="(?:\\./|/)?app\\.js"`, "g"),
+        `src="${fingerprintedUrl}"`,
+      );
+      continue;
+    }
+
+    if (originalPath.endsWith("mediabunny.js") || originalPath.endsWith("webcodecs-renderer.js")) {
+      html = html.replaceAll(
+        new RegExp(`src="(?:\\./|/)?${basename(originalPath, ".js")}\\.js"`, "g"),
         `src="${fingerprintedUrl}"`,
       );
       continue;

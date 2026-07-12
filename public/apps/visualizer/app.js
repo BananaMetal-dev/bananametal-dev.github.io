@@ -48,14 +48,18 @@
     export: { ja: "Export", en: "Export" },
     startRender: { ja: "書き出し開始", en: "Start Render" },
     stop: { ja: "停止", en: "Stop" },
-    mp4Next: { ja: "MP4は次段階", en: "MP4 Next" },
+    mp4Convert: { ja: "MP4に変換", en: "Convert to MP4" },
+    mp4Download: { ja: "MP4をダウンロード", en: "Download MP4" },
     download: { ja: "ダウンロード", en: "Download" },
     outputName: { ja: "出力名", en: "Output Name" },
     ready: { ja: "Ready", en: "Ready" },
     noOutput: { ja: "No output yet", en: "No output yet" },
     loaded: { ja: "読み込み済み", en: "Loaded" },
     notLoaded: { ja: "未読込み", en: "Not loaded" },
-    mp4Later: { ja: "MP4変換は次段階です。", en: "MP4 conversion is planned for a later step." },
+    mp4Converting: { ja: "MP4へ変換中", en: "Converting to MP4" },
+    mp4Completed: { ja: "MP4変換が完了しました", en: "MP4 conversion completed" },
+    mp4Unavailable: { ja: "このブラウザではMP4変換を利用できません。", en: "MP4 conversion is not available in this browser." },
+    mp4Failed: { ja: "MP4変換に失敗しました。WebMは利用できます。", en: "MP4 conversion failed. The WebM output is still available." },
     supportedFileMissing: { ja: "{source}: 対応する{kind}ファイルが見つかりません", en: "{source}: supported {kind} file not found" },
     importing: { ja: "{name} を読み込み中", en: "Importing {name}" },
     imageImported: { ja: "静止画像を読み込みました", en: "Still image imported" },
@@ -63,7 +67,12 @@
     watermarkImported: { ja: "ウォーターマークを読み込みました", en: "Watermark icon imported" },
     imageRequired: { ja: "静止画像は必須です。", en: "Still image is required." },
     mediaRecorderUnavailable: { ja: "このブラウザでは MediaRecorder を利用できません。", en: "MediaRecorder is not available in this browser." },
+    canvasCaptureUnavailable: { ja: "このブラウザではキャンバス録画を利用できません。", en: "Canvas capture is not available in this browser." },
+    webCodecsFallback: { ja: "高速書き出しを利用できないため、通常方式へ切り替えます。", en: "Fast rendering is unavailable. Falling back to standard recording." },
+    renderStopping: { ja: "書き出しを停止しています", en: "Stopping render" },
+    renderCanceled: { ja: "書き出しをキャンセルしました", en: "Render canceled" },
     rendering: { ja: "Rendering", en: "Rendering" },
+    renderProgress: { ja: "書き出し進捗 {percent}%", en: "Render progress {percent}%" },
     renderingMeta: { ja: "Browser rendering in progress", en: "Rendering in browser" },
     renderCompleted: { ja: "書き出しが完了しました", en: "Render completed" },
     projectExported: { ja: "プロジェクトJSONを書き出しました", en: "Project JSON exported" },
@@ -228,8 +237,10 @@
     audioElement: document.getElementById("audioElement"),
     resultVideo: document.getElementById("resultVideo"),
     downloadLink: document.getElementById("downloadLink"),
+    mp4DownloadLink: document.getElementById("mp4DownloadLink"),
     statusText: document.getElementById("statusText"),
     resultMeta: document.getElementById("resultMeta"),
+    mp4ResultMeta: document.getElementById("mp4ResultMeta"),
     durationInput: document.getElementById("durationInput"),
     timelineSilentButton: document.getElementById("timelineSilentButton"),
     timelineAudioButton: document.getElementById("timelineAudioButton"),
@@ -287,7 +298,8 @@
       image: "",
       audio: "",
       watermark: "",
-      output: ""
+      output: "",
+      mp4Output: ""
     },
     media: {
       image: null,
@@ -300,8 +312,17 @@
       destination: null
     },
     animationFrame: 0,
+    renderFrame: 0,
     isPreviewing: false,
     isRendering: false,
+    renderCanvas: null,
+    renderMode: "",
+    renderCancelRequested: false,
+    renderAudioAnalysis: null,
+    renderStartedAt: 0,
+    renderDuration: 0,
+    renderElapsed: 0,
+    outputDuration: 0,
     renderStopTimer: 0,
     recorder: null,
     recordedChunks: [],
@@ -405,8 +426,9 @@
     els.exportSummary.textContent = t("export");
     els.renderButton.textContent = t("startRender");
     els.stopButton.textContent = t("stop");
-    els.mp4Button.textContent = t("mp4Next");
+    els.mp4Button.textContent = t("mp4Convert");
     els.downloadLink.textContent = t("download");
+    els.mp4DownloadLink.textContent = t("mp4Download");
     els.outputNameLabel.textContent = t("outputName");
     els.languageJaButton.classList.toggle("is-active", currentLanguage === "ja");
     els.languageEnButton.classList.toggle("is-active", currentLanguage === "en");
@@ -514,7 +536,7 @@
     els.resetProjectButton.addEventListener("click", resetProject);
     els.renderButton.addEventListener("click", renderProject);
     els.stopButton.addEventListener("click", stopRender);
-    els.mp4Button.addEventListener("click", () => setStatus(t("mp4Later")));
+    els.mp4Button.addEventListener("click", convertToMp4);
     els.playButton.addEventListener("click", togglePreview);
   }
 
@@ -987,7 +1009,10 @@
   }
 
   function updateDownloadName() {
-    els.downloadLink.download = state.project.export.outputName || "banana-visualizer-output.webm";
+    const rawName = state.project.export.outputName || "banana-visualizer-output";
+    const baseName = rawName.replace(/\.(?:webm|mp4)$/i, "");
+    els.downloadLink.download = `${baseName}.webm`;
+    els.mp4DownloadLink.download = `${baseName}.mp4`;
   }
 
   function updateAssetStates() {
@@ -1116,7 +1141,7 @@
     const tick = () => {
       drawPreview();
       updatePlaybackText();
-      if (state.isPreviewing || state.isRendering) {
+      if (state.isPreviewing) {
         state.animationFrame = window.requestAnimationFrame(tick);
       }
     };
@@ -1153,8 +1178,129 @@
       setStatus(t("imageRequired"));
       return;
     }
+
+    if (canUseWebCodecs()) {
+      try {
+        await renderProjectWithWebCodecs();
+        return;
+      } catch (error) {
+        if (state.renderCancelRequested || error?.name === "AbortError") {
+          cancelFastRender();
+          return;
+        }
+        resetRenderUi();
+        setStatus(t("webCodecsFallback"));
+      }
+    }
+
+    await renderProjectWithMediaRecorder();
+  }
+
+  function canUseWebCodecs() {
+    return Boolean(window.BananaMetalWebCodecsRenderer?.isSupported?.("webm", Boolean(state.assets.audio)));
+  }
+
+  function canUseMp4() {
+    return Boolean(window.BananaMetalWebCodecsRenderer?.isSupported?.("mp4", Boolean(state.assets.audio)));
+  }
+
+  async function renderProjectWithWebCodecs() {
+    if (state.assets.audio) {
+      await ensureAudioGraph();
+    }
+
+    clearResult();
+    els.previewCanvas.width = state.project.layout.width;
+    els.previewCanvas.height = state.project.layout.height;
+    state.renderCanvas = document.createElement("canvas");
+    state.renderCanvas.width = state.project.layout.width;
+    state.renderCanvas.height = state.project.layout.height;
+    state.renderDuration = safeDuration();
+    beginRenderUi("webcodecs");
+
+    const result = await window.BananaMetalWebCodecsRenderer.render({
+      canvas: state.renderCanvas,
+      width: state.project.layout.width,
+      height: state.project.layout.height,
+      fps: state.project.layout.fps,
+      duration: state.renderDuration,
+      audioFile: state.assets.audio,
+      audioContext: state.audioGraph.context,
+      drawFrame: (canvas, renderTime, audioBuffer) => drawCanvas(canvas, renderTime, audioBuffer),
+      onProgress: ({ ratio }) => updateRenderProgress(ratio),
+      shouldCancel: () => state.renderCancelRequested
+    });
+
+    if (state.renderCancelRequested) {
+      throw createRenderAbortError();
+    }
+    completeRender(result.blob, result.duration);
+  }
+
+  async function convertToMp4() {
+    if (state.isRendering || !state.urls.output) return;
+    if (!canUseMp4()) {
+      setStatus(t("mp4Unavailable"));
+      return;
+    }
+
+    try {
+      if (state.assets.audio) {
+        await ensureAudioGraph();
+      }
+
+      if (state.urls.mp4Output) {
+        URL.revokeObjectURL(state.urls.mp4Output);
+        state.urls.mp4Output = "";
+      }
+      els.mp4DownloadLink.hidden = true;
+      els.mp4DownloadLink.removeAttribute("href");
+      state.renderCanvas = document.createElement("canvas");
+      state.renderCanvas.width = state.project.layout.width;
+      state.renderCanvas.height = state.project.layout.height;
+      state.renderDuration = state.outputDuration || safeDuration();
+      beginMp4ConversionUi();
+
+      const result = await window.BananaMetalWebCodecsRenderer.render({
+        format: "mp4",
+        canvas: state.renderCanvas,
+        width: state.project.layout.width,
+        height: state.project.layout.height,
+        fps: state.project.layout.fps,
+        duration: state.renderDuration,
+        audioFile: state.assets.audio,
+        audioContext: state.audioGraph.context,
+        drawFrame: (canvas, renderTime, audioBuffer) => drawCanvas(canvas, renderTime, audioBuffer),
+        onProgress: ({ ratio }) => updateRenderProgress(ratio),
+        shouldCancel: () => state.renderCancelRequested
+      });
+
+      if (state.renderCancelRequested) {
+        throw createRenderAbortError();
+      }
+      completeMp4Render(result.blob, result.duration);
+    } catch (error) {
+      if (state.renderCancelRequested || error?.name === "AbortError") {
+        cancelFastRender();
+        return;
+      }
+      resetRenderUi();
+      setStatus(t("mp4Failed"));
+    }
+  }
+
+  async function renderProjectWithMediaRecorder() {
+    if (state.isRendering) return;
+    if (!state.assets.image) {
+      setStatus(t("imageRequired"));
+      return;
+    }
     if (!window.MediaRecorder) {
       setStatus(t("mediaRecorderUnavailable"));
+      return;
+    }
+    if (typeof HTMLCanvasElement === "undefined" || !HTMLCanvasElement.prototype.captureStream) {
+      setStatus(t("canvasCaptureUnavailable"));
       return;
     }
 
@@ -1166,7 +1312,12 @@
     els.previewCanvas.width = state.project.layout.width;
     els.previewCanvas.height = state.project.layout.height;
 
-    const stream = els.previewCanvas.captureStream(state.project.layout.fps);
+    state.renderCanvas = document.createElement("canvas");
+    state.renderCanvas.width = state.project.layout.width;
+    state.renderCanvas.height = state.project.layout.height;
+    drawCanvas(state.renderCanvas);
+
+    const stream = state.renderCanvas.captureStream(state.project.layout.fps);
     const composed = new MediaStream();
     stream.getVideoTracks().forEach((track) => composed.addTrack(track));
     if (state.assets.audio && state.audioGraph.destination) {
@@ -1183,18 +1334,8 @@
     });
     state.recorder.addEventListener("stop", finalizeRender);
 
-    state.isRendering = true;
-    state.isPreviewing = true;
-    els.renderButton.disabled = true;
-    els.stopButton.disabled = false;
-    els.stopButton.hidden = false;
-    els.mp4Button.hidden = true;
-    els.downloadLink.hidden = true;
-    els.resultVideo.hidden = true;
-    els.playButton.textContent = t("stop");
-    setStatus(t("rendering"));
-    state.resultMeta = t("renderingMeta");
-    els.resultMeta.textContent = state.resultMeta;
+    state.renderDuration = safeDuration();
+    beginRenderUi("mediarecorder");
 
     if (state.assets.audio) {
       els.audioElement.currentTime = 0;
@@ -1202,15 +1343,132 @@
     }
 
     state.recorder.start(250);
-    startAnimation();
+    startBackgroundRender();
 
     window.clearTimeout(state.renderStopTimer);
-    state.renderStopTimer = window.setTimeout(() => stopRender(), safeDuration() * 1000 + 60);
+    state.renderStopTimer = window.setTimeout(() => stopRender(), state.renderDuration * 1000 + 60);
+  }
+
+  function beginRenderUi(mode) {
+    stopAnimation();
+    state.isRendering = true;
+    state.isPreviewing = false;
+    state.renderMode = mode;
+    state.renderCancelRequested = false;
+    state.renderElapsed = 0;
+    state.renderStartedAt = performance.now();
+    els.renderButton.disabled = true;
+    els.stopButton.disabled = false;
+    els.stopButton.hidden = false;
+    els.mp4Button.hidden = true;
+    els.mp4Button.disabled = true;
+    els.downloadLink.hidden = true;
+    els.mp4DownloadLink.hidden = true;
+    els.resultVideo.hidden = true;
+    els.playButton.textContent = t("stop");
+    els.playButton.disabled = true;
+    updateRenderProgress(0);
+  }
+
+  function beginMp4ConversionUi() {
+    stopAnimation();
+    state.isRendering = true;
+    state.isPreviewing = false;
+    state.renderMode = "mp4";
+    state.renderCancelRequested = false;
+    state.renderElapsed = 0;
+    state.renderStartedAt = performance.now();
+    els.renderButton.disabled = true;
+    els.mp4Button.disabled = true;
+    els.stopButton.disabled = false;
+    els.stopButton.hidden = false;
+    els.playButton.textContent = t("stop");
+    els.playButton.disabled = true;
+    updateRenderProgress(0);
+  }
+
+  function resetRenderUi() {
+    window.clearTimeout(state.renderStopTimer);
+    stopBackgroundRender();
+    stopAnimation();
+    state.isRendering = false;
+    state.isPreviewing = false;
+    state.renderMode = "";
+    state.renderCancelRequested = false;
+    state.renderCanvas = null;
+    state.renderAudioAnalysis = null;
+    els.renderButton.disabled = false;
+    els.stopButton.disabled = true;
+    els.stopButton.hidden = true;
+    els.mp4Button.hidden = !state.urls.output;
+    els.mp4Button.disabled = Boolean(state.urls.output) ? !canUseMp4() : true;
+    els.playButton.disabled = false;
+    els.playButton.textContent = t("playPreview");
+  }
+
+  function cancelFastRender() {
+    resetRenderUi();
+    setStatus(t("renderCanceled"));
+    updatePlaybackText();
+  }
+
+  function createRenderAbortError() {
+    const error = new Error("Render canceled.");
+    error.name = "AbortError";
+    return error;
+  }
+
+  function startBackgroundRender() {
+    stopBackgroundRender();
+    const tick = () => {
+      if (!state.isRendering || !state.renderCanvas) return;
+      state.renderElapsed = Math.min(
+        state.renderDuration,
+        Math.max(0, (performance.now() - state.renderStartedAt) / 1000)
+      );
+      drawCanvas(state.renderCanvas);
+      updateRenderProgress(state.renderDuration > 0 ? state.renderElapsed / state.renderDuration : 0);
+      if (state.renderElapsed >= state.renderDuration) {
+        stopRender();
+        return;
+      }
+      state.renderFrame = window.requestAnimationFrame(tick);
+    };
+    state.renderFrame = window.requestAnimationFrame(tick);
+  }
+
+  function stopBackgroundRender() {
+    if (state.renderFrame) {
+      window.cancelAnimationFrame(state.renderFrame);
+      state.renderFrame = 0;
+    }
+  }
+
+  function updateRenderProgress(ratio) {
+    const percent = Math.round(clamp(ratio, 0, 1) * 100);
+    const progressText = state.renderMode === "mp4"
+      ? `${t("mp4Converting")} ${percent}%`
+      : t("renderProgress", { percent });
+    setStatus(progressText);
+    state.resultMeta = state.renderMode === "mp4"
+      ? `${t("mp4Converting")} / ${percent}%`
+      : `${t("renderingMeta")} / ${percent}%`;
+    els.resultMeta.textContent = state.resultMeta;
   }
 
   function stopRender() {
     if (!state.isRendering) return;
+    if (state.renderMode === "webcodecs" || state.renderMode === "mp4") {
+      state.renderCancelRequested = true;
+      setStatus(t("renderStopping"));
+      return;
+    }
     window.clearTimeout(state.renderStopTimer);
+    stopBackgroundRender();
+    state.renderElapsed = Math.min(
+      state.renderDuration,
+      Math.max(0, (performance.now() - state.renderStartedAt) / 1000)
+    );
     els.audioElement.pause();
     if (state.recorder && state.recorder.state !== "inactive") {
       state.recorder.stop();
@@ -1220,30 +1478,42 @@
   }
 
   function finalizeRender() {
+    const blob = new Blob(state.recordedChunks, { type: pickMimeType() || "video/webm" });
+    const renderedDuration = state.renderElapsed || state.renderDuration || safeDuration();
+    completeRender(blob, renderedDuration);
+  }
+
+  function completeRender(blob, renderedDuration) {
     if (state.urls.output) {
       URL.revokeObjectURL(state.urls.output);
       state.urls.output = "";
     }
 
-    const blob = new Blob(state.recordedChunks, { type: pickMimeType() || "video/webm" });
     state.urls.output = URL.createObjectURL(blob);
-    state.isRendering = false;
-    state.isPreviewing = false;
-    els.renderButton.disabled = false;
-    els.stopButton.disabled = true;
-    els.stopButton.hidden = true;
-    els.playButton.textContent = t("playPreview");
-    stopAnimation();
-    drawPreview();
-
-    state.resultMeta = `${formatBytes(blob.size)} / ${safeDuration().toFixed(1)} sec`;
+    state.outputDuration = renderedDuration;
+    resetRenderUi();
+    state.resultMeta = `${formatBytes(blob.size)} / ${renderedDuration.toFixed(1)} sec`;
     els.resultMeta.textContent = state.resultMeta;
     els.resultVideo.hidden = false;
     els.resultVideo.src = state.urls.output;
     els.downloadLink.hidden = false;
     els.mp4Button.hidden = false;
+    els.mp4Button.disabled = !canUseMp4();
     els.downloadLink.href = state.urls.output;
+    els.mp4DownloadLink.hidden = true;
+    els.mp4ResultMeta.hidden = true;
     setStatus(t("renderCompleted"));
+    updatePlaybackText();
+  }
+
+  function completeMp4Render(blob, renderedDuration) {
+    state.urls.mp4Output = URL.createObjectURL(blob);
+    resetRenderUi();
+    els.mp4DownloadLink.hidden = false;
+    els.mp4DownloadLink.href = state.urls.mp4Output;
+    els.mp4ResultMeta.hidden = false;
+    els.mp4ResultMeta.textContent = `MP4: ${formatBytes(blob.size)} / ${renderedDuration.toFixed(1)} sec`;
+    setStatus(t("mp4Completed"));
     updatePlaybackText();
   }
 
@@ -1253,14 +1523,26 @@
     els.resultVideo.load();
     els.downloadLink.hidden = true;
     els.downloadLink.removeAttribute("href");
+    els.mp4DownloadLink.hidden = true;
+    els.mp4DownloadLink.removeAttribute("href");
     els.mp4Button.hidden = true;
     els.stopButton.hidden = true;
     if (state.urls.output) {
       URL.revokeObjectURL(state.urls.output);
       state.urls.output = "";
     }
+    if (state.urls.mp4Output) {
+      URL.revokeObjectURL(state.urls.mp4Output);
+      state.urls.mp4Output = "";
+    }
     state.resultMeta = t("noOutput");
     els.resultMeta.textContent = state.resultMeta;
+    state.renderDuration = 0;
+    state.renderElapsed = 0;
+    state.outputDuration = 0;
+    state.renderAudioAnalysis = null;
+    els.mp4ResultMeta.hidden = true;
+    els.mp4ResultMeta.textContent = "";
   }
 
   function setStatus(message) {
@@ -1269,7 +1551,10 @@
   }
 
   function drawPreview() {
-    const canvas = els.previewCanvas;
+    drawCanvas(els.previewCanvas);
+  }
+
+  function drawCanvas(canvas, renderTime = null, renderAudioBuffer = null) {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
@@ -1298,7 +1583,7 @@
     const base = typeof color.base === "string" ? color.base : "#ffffff";
     const accent = typeof color.accent === "string" ? color.accent : "#ddf6ff";
     const peak = typeof color.peak === "string" ? color.peak : "#ffffff";
-    const values = readVisualizerValues();
+    const values = readVisualizerValues(renderTime, renderAudioBuffer);
     const bounds = readVisualizerBounds(width, height);
     drawVisualizer(ctx, values, bounds, accent, peak, base);
 
@@ -1329,10 +1614,15 @@
     ctx.drawImage(image, drawX, drawY, drawWidth, drawHeight);
   }
 
-  function readVisualizerValues() {
+  function readVisualizerValues(renderTime = null, renderAudioBuffer = null) {
     const count = Math.min(160, Math.max(24, Number(state.project.visualizer.parameters.barCount || 96)));
+    if (renderAudioBuffer && Number.isFinite(renderTime)) {
+      return readAudioBufferValues(renderAudioBuffer, renderTime, count);
+    }
+
+    const phaseTime = Number.isFinite(renderTime) ? renderTime * 1000 : performance.now();
     let values = Array.from({ length: count }, (_, index) => {
-      const t = performance.now() / 620;
+      const t = phaseTime / 620;
       return 0.16 + Math.abs(Math.sin(t + index * 0.43)) * 0.48;
     });
 
@@ -1358,6 +1648,102 @@
     }
 
     return normalizeVisualizerValues(values);
+  }
+
+  function readAudioBufferValues(audioBuffer, timeSeconds, count) {
+    const fftSize = 1024;
+    const sampleRate = audioBuffer.sampleRate;
+    if (!state.renderAudioAnalysis || state.renderAudioAnalysis.buffer !== audioBuffer) {
+      state.renderAudioAnalysis = {
+        buffer: audioBuffer,
+        sampleRate,
+        fftSize,
+        channels: Array.from(
+          { length: Math.min(2, audioBuffer.numberOfChannels) },
+          (_, index) => audioBuffer.getChannelData(index)
+        ),
+        edges: buildLogBandEdges(fftSize / 2, count, sampleRate)
+      };
+    }
+
+    const analysis = state.renderAudioAnalysis;
+    if (analysis.edges.length !== count + 1) {
+      analysis.edges = buildLogBandEdges(fftSize / 2, count, sampleRate);
+    }
+
+    const real = new Float32Array(fftSize);
+    const imaginary = new Float32Array(fftSize);
+    const center = Math.floor(Math.max(0, timeSeconds) * sampleRate);
+    const start = center - Math.floor(fftSize / 2);
+    for (let index = 0; index < fftSize; index += 1) {
+      const sourceIndex = start + index;
+      let sample = 0;
+      if (sourceIndex >= 0 && sourceIndex < audioBuffer.length) {
+        for (const channel of analysis.channels) sample += channel[sourceIndex] || 0;
+        sample /= Math.max(1, analysis.channels.length);
+      }
+      const window = 0.5 - 0.5 * Math.cos((2 * Math.PI * index) / (fftSize - 1));
+      real[index] = sample * window;
+    }
+
+    fftInPlace(real, imaginary);
+    const response = getEntry(state.project.visualizer.responseProfileId)?.defaults || {};
+    const lowGain = Number(response.lowGain || 1.2);
+    const midGain = Number(response.midGain || 1);
+    const highGain = Number(response.highGain || 0.8);
+    const normalization = fftSize / 2;
+    const values = Array.from({ length: count }, (_, index) => {
+      const startBin = analysis.edges[index];
+      const endBin = Math.max(startBin + 1, analysis.edges[index + 1]);
+      let sum = 0;
+      for (let bin = startBin; bin < endBin; bin += 1) {
+        sum += Math.hypot(real[bin], imaginary[bin]) / normalization;
+      }
+      const bandCenter = index / count;
+      const gain = bandCenter < 0.33 ? lowGain : bandCenter < 0.66 ? midGain : highGain;
+      return Math.max(0.04, Math.min(1, (sum / (endBin - startBin)) * gain));
+    });
+    return normalizeVisualizerValues(values);
+  }
+
+  function fftInPlace(real, imaginary) {
+    const size = real.length;
+    for (let index = 1, reverse = 0; index < size; index += 1) {
+      let bit = size >> 1;
+      while (reverse & bit) {
+        reverse ^= bit;
+        bit >>= 1;
+      }
+      reverse ^= bit;
+      if (index < reverse) {
+        [real[index], real[reverse]] = [real[reverse], real[index]];
+        [imaginary[index], imaginary[reverse]] = [imaginary[reverse], imaginary[index]];
+      }
+    }
+
+    for (let length = 2; length <= size; length <<= 1) {
+      const angle = (-2 * Math.PI) / length;
+      const stepReal = Math.cos(angle);
+      const stepImaginary = Math.sin(angle);
+      for (let offset = 0; offset < size; offset += length) {
+        let currentReal = 1;
+        let currentImaginary = 0;
+        const half = length >> 1;
+        for (let index = 0; index < half; index += 1) {
+          const even = offset + index;
+          const odd = even + half;
+          const productReal = currentReal * real[odd] - currentImaginary * imaginary[odd];
+          const productImaginary = currentReal * imaginary[odd] + currentImaginary * real[odd];
+          real[odd] = real[even] - productReal;
+          imaginary[odd] = imaginary[even] - productImaginary;
+          real[even] += productReal;
+          imaginary[even] += productImaginary;
+          const nextReal = currentReal * stepReal - currentImaginary * stepImaginary;
+          currentImaginary = currentReal * stepImaginary + currentImaginary * stepReal;
+          currentReal = nextReal;
+        }
+      }
+    }
   }
 
   function drawVisualizer(ctx, values, bounds, accent, peak, base) {
