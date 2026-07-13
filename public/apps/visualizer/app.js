@@ -55,9 +55,8 @@
     mp4Download: { ja: "MP4をダウンロード", en: "Download MP4" },
     download: { ja: "ダウンロード", en: "Download" },
     outputName: { ja: "出力名", en: "Output Name" },
-    outputSpeed: { ja: "出力速度", en: "Output Speed" },
-    speedWarning: { ja: "速度は保証できません。PC性能によって変動します。", en: "Render speed is not guaranteed and varies by PC performance." },
-    speedRequiresWebCodecs: { ja: "2倍速の書き出しには、このブラウザのWebCodecs対応が必要です。", en: "2x rendering requires WebCodecs support in this browser." },
+    outputSpeed: { ja: "処理速度の目安", en: "Processing Speed Hint" },
+    speedWarning: { ja: "処理速度は保証できません。PC性能によって変動します。出力動画は通常速度です。", en: "Processing speed is not guaranteed and varies by PC performance. The output video remains at normal speed." },
     ready: { ja: "Ready", en: "Ready" },
     noOutput: { ja: "No output yet", en: "No output yet" },
     loaded: { ja: "読み込み済み", en: "Loaded" },
@@ -1266,10 +1265,6 @@
       return;
     }
     const speed = selectedRenderSpeed();
-    if (speed > 1 && !canUseWebCodecs()) {
-      setStatus(t("speedRequiresWebCodecs"));
-      return;
-    }
 
     if (canUseWebCodecs()) {
       try {
@@ -1281,10 +1276,6 @@
           return;
         }
         resetRenderUi();
-        if (speed > 1) {
-          setStatus(t("speedRequiresWebCodecs"));
-          return;
-        }
         setStatus(t("webCodecsFallback"));
       }
     }
@@ -1313,7 +1304,7 @@
     state.renderCanvas.height = state.project.layout.height;
     const sourceDuration = safeDuration();
     const speed = selectedRenderSpeed();
-    state.renderDuration = sourceDuration / speed;
+    state.renderDuration = sourceDuration;
     beginRenderUi("webcodecs");
 
     const result = await window.BananaMetalWebCodecsRenderer.render({
@@ -1325,11 +1316,7 @@
       speed,
       audioFile: state.media.audio,
       audioContext: state.audioGraph.context,
-      drawFrame: (canvas, renderTime, audioBuffer) => drawCanvas(
-        canvas,
-        audioBuffer ? renderTime : renderTime * speed,
-        audioBuffer
-      ),
+      drawFrame: (canvas, renderTime, audioBuffer) => drawCanvas(canvas, renderTime, audioBuffer),
       onProgress: ({ ratio }) => updateRenderProgress(ratio),
       shouldCancel: () => state.renderCancelRequested
     });
@@ -1363,7 +1350,7 @@
       state.renderCanvas.height = state.project.layout.height;
       const sourceDuration = safeDuration();
       const speed = selectedRenderSpeed();
-      state.renderDuration = sourceDuration / speed;
+      state.renderDuration = sourceDuration;
       beginMp4ConversionUi();
 
       const result = await window.BananaMetalWebCodecsRenderer.render({
@@ -1376,11 +1363,7 @@
         speed,
         audioFile: state.media.audio,
         audioContext: state.audioGraph.context,
-        drawFrame: (canvas, renderTime, audioBuffer) => drawCanvas(
-          canvas,
-          audioBuffer ? renderTime : renderTime * speed,
-          audioBuffer
-        ),
+        drawFrame: (canvas, renderTime, audioBuffer) => drawCanvas(canvas, renderTime, audioBuffer),
         onProgress: ({ ratio }) => updateRenderProgress(ratio),
         shouldCancel: () => state.renderCancelRequested
       });
@@ -1403,10 +1386,6 @@
     if (state.isRendering) return;
     if (!state.assets.image) {
       setStatus(t("imageRequired"));
-      return;
-    }
-    if (selectedRenderSpeed() > 1) {
-      setStatus(t("speedRequiresWebCodecs"));
       return;
     }
     if (!window.MediaRecorder) {
