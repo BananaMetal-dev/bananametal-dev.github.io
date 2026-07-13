@@ -161,6 +161,12 @@
             <span id="previewLabel"></span>
             <div class="preview-controls">
               <button id="playButton" type="button"></button>
+              <button id="audioMuteButton" class="preview-audio-button" type="button" aria-pressed="false"></button>
+              <label class="audio-volume-control">
+                <span id="audioVolumeLabel"></span>
+                <input id="audioVolumeInput" type="range" min="0" max="100" step="1" value="100">
+                <output id="audioVolumeValue">100%</output>
+              </label>
               <span id="previewReadout">1280 x 720 / 30fps</span>
             </div>
           </div>
@@ -172,6 +178,9 @@
               height="720"
               tabindex="0"
             ></canvas>
+            <div id="renderProgressOverlay" class="preview-render-overlay" role="status" aria-live="polite" hidden>
+              <span id="renderProgressPercent">0%</span>
+            </div>
           </div>
         </section>
 
