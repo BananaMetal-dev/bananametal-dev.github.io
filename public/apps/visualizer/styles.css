@@ -186,6 +186,12 @@ button:disabled {
   font-weight: 700;
 }
 
+.tool-button.is-passive {
+  cursor: not-allowed;
+  opacity: 0.45;
+  pointer-events: none;
+}
+
 .workspace {
   position: relative;
   display: grid;
