@@ -670,6 +670,13 @@ button:disabled {
   min-width: 132px;
 }
 
+.export-warning {
+  margin: 0;
+  color: #ffc4a8;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
 .queue-actions {
   grid-column: 2;
   display: flex;

@@ -55,6 +55,9 @@
     mp4Download: { ja: "MP4をダウンロード", en: "Download MP4" },
     download: { ja: "ダウンロード", en: "Download" },
     outputName: { ja: "出力名", en: "Output Name" },
+    outputSpeed: { ja: "出力速度", en: "Output Speed" },
+    speedWarning: { ja: "速度は保証できません。PC性能によって変動します。", en: "Render speed is not guaranteed and varies by PC performance." },
+    speedRequiresWebCodecs: { ja: "2倍速の書き出しには、このブラウザのWebCodecs対応が必要です。", en: "2x rendering requires WebCodecs support in this browser." },
     ready: { ja: "Ready", en: "Ready" },
     noOutput: { ja: "No output yet", en: "No output yet" },
     loaded: { ja: "読み込み済み", en: "Loaded" },
@@ -251,6 +254,9 @@
     statusText: document.getElementById("statusText"),
     resultMeta: document.getElementById("resultMeta"),
     mp4ResultMeta: document.getElementById("mp4ResultMeta"),
+    speedLabel: document.getElementById("speedLabel"),
+    speedSelect: document.getElementById("speedSelect"),
+    speedWarning: document.getElementById("speedWarning"),
     durationInput: document.getElementById("durationInput"),
     timelineSilentButton: document.getElementById("timelineSilentButton"),
     timelineAudioButton: document.getElementById("timelineAudioButton"),
@@ -313,6 +319,7 @@
     },
     media: {
       image: null,
+      audio: null,
       watermark: null
     },
     audioGraph: {
@@ -446,6 +453,8 @@
     els.downloadLink.textContent = t("download");
     els.mp4DownloadLink.textContent = t("mp4Download");
     els.outputNameLabel.textContent = t("outputName");
+    els.speedLabel.textContent = t("outputSpeed");
+    els.speedWarning.textContent = t("speedWarning");
     els.languageJaButton.classList.toggle("is-active", currentLanguage === "ja");
     els.languageEnButton.classList.toggle("is-active", currentLanguage === "en");
     Array.from(els.watermarkSizeSelect.options).forEach((option) => {
@@ -500,7 +509,8 @@
         opacity: 58
       },
       export: {
-        outputName: "banana-visualizer-output.webm"
+        outputName: "banana-visualizer-output.webm",
+        speed: 1
       }
     };
   }
@@ -683,6 +693,10 @@
       state.project.export.outputName = sanitizeOutputName(els.outputNameInput.value);
       updateDownloadName();
     });
+    els.speedSelect.addEventListener("change", () => {
+      state.project.export.speed = speedFromValue(els.speedSelect.value);
+      syncFormFromState();
+    });
   }
 
   function bindPreview() {
@@ -807,6 +821,7 @@
       state.project.layout.fitMode = "crop";
       els.imageDrop.open = false;
     } else if (kind === "audio") {
+      state.media.audio = file;
       els.audioElement.src = state.urls.audio;
       els.audioElement.load();
       els.audioDrop.open = false;
@@ -838,6 +853,7 @@
       state.urls[kind] = "";
     }
     if (kind === "image") state.media.image = null;
+    if (kind === "audio") state.media.audio = null;
     if (kind === "watermark") state.media.watermark = null;
   }
 
@@ -1001,6 +1017,12 @@
     els.watermarkSizeSelect.value = state.project.watermark.size;
     els.watermarkOpacityInput.value = String(state.project.watermark.opacity);
     els.watermarkOpacityValue.textContent = `${Math.round(state.project.watermark.opacity)}%`;
+    state.project.export = {
+      ...defaultProject().export,
+      ...(state.project.export || {})
+    };
+    state.project.export.speed = selectedRenderSpeed();
+    els.speedSelect.value = String(state.project.export.speed);
     els.outputNameInput.value = state.project.export.outputName;
     updatePresetButtons();
     updateStatusReadouts();
@@ -1219,6 +1241,14 @@
     return Math.max(0.3, Number(state.project.timeline.durationSeconds || 10));
   }
 
+  function selectedRenderSpeed() {
+    return speedFromValue(state.project?.export?.speed);
+  }
+
+  function speedFromValue(value) {
+    return Number(value) === 2 ? 2 : 1;
+  }
+
   function handleAudioEnded() {
     if (state.isRendering) {
       stopRender();
@@ -1235,6 +1265,11 @@
       setStatus(t("imageRequired"));
       return;
     }
+    const speed = selectedRenderSpeed();
+    if (speed > 1 && !canUseWebCodecs()) {
+      setStatus(t("speedRequiresWebCodecs"));
+      return;
+    }
 
     if (canUseWebCodecs()) {
       try {
@@ -1246,6 +1281,10 @@
           return;
         }
         resetRenderUi();
+        if (speed > 1) {
+          setStatus(t("speedRequiresWebCodecs"));
+          return;
+        }
         setStatus(t("webCodecsFallback"));
       }
     }
@@ -1272,7 +1311,9 @@
     state.renderCanvas = document.createElement("canvas");
     state.renderCanvas.width = state.project.layout.width;
     state.renderCanvas.height = state.project.layout.height;
-    state.renderDuration = safeDuration();
+    const sourceDuration = safeDuration();
+    const speed = selectedRenderSpeed();
+    state.renderDuration = sourceDuration / speed;
     beginRenderUi("webcodecs");
 
     const result = await window.BananaMetalWebCodecsRenderer.render({
@@ -1280,10 +1321,15 @@
       width: state.project.layout.width,
       height: state.project.layout.height,
       fps: state.project.layout.fps,
-      duration: state.renderDuration,
-      audioFile: state.assets.audio,
+      duration: sourceDuration,
+      speed,
+      audioFile: state.media.audio,
       audioContext: state.audioGraph.context,
-      drawFrame: (canvas, renderTime, audioBuffer) => drawCanvas(canvas, renderTime, audioBuffer),
+      drawFrame: (canvas, renderTime, audioBuffer) => drawCanvas(
+        canvas,
+        audioBuffer ? renderTime : renderTime * speed,
+        audioBuffer
+      ),
       onProgress: ({ ratio }) => updateRenderProgress(ratio),
       shouldCancel: () => state.renderCancelRequested
     });
@@ -1315,7 +1361,9 @@
       state.renderCanvas = document.createElement("canvas");
       state.renderCanvas.width = state.project.layout.width;
       state.renderCanvas.height = state.project.layout.height;
-      state.renderDuration = state.outputDuration || safeDuration();
+      const sourceDuration = safeDuration();
+      const speed = selectedRenderSpeed();
+      state.renderDuration = sourceDuration / speed;
       beginMp4ConversionUi();
 
       const result = await window.BananaMetalWebCodecsRenderer.render({
@@ -1324,10 +1372,15 @@
         width: state.project.layout.width,
         height: state.project.layout.height,
         fps: state.project.layout.fps,
-        duration: state.renderDuration,
-        audioFile: state.assets.audio,
+        duration: sourceDuration,
+        speed,
+        audioFile: state.media.audio,
         audioContext: state.audioGraph.context,
-        drawFrame: (canvas, renderTime, audioBuffer) => drawCanvas(canvas, renderTime, audioBuffer),
+        drawFrame: (canvas, renderTime, audioBuffer) => drawCanvas(
+          canvas,
+          audioBuffer ? renderTime : renderTime * speed,
+          audioBuffer
+        ),
         onProgress: ({ ratio }) => updateRenderProgress(ratio),
         shouldCancel: () => state.renderCancelRequested
       });
@@ -1350,6 +1403,10 @@
     if (state.isRendering) return;
     if (!state.assets.image) {
       setStatus(t("imageRequired"));
+      return;
+    }
+    if (selectedRenderSpeed() > 1) {
+      setStatus(t("speedRequiresWebCodecs"));
       return;
     }
     if (!window.MediaRecorder) {
@@ -2211,6 +2268,10 @@
       watermark: {
         ...defaultProject().watermark,
         ...(parsed.watermark || {})
+      },
+      export: {
+        ...defaultProject().export,
+        ...(parsed.export || {})
       },
       projectId: crypto.randomUUID(),
       assets: {}
