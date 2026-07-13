@@ -34,6 +34,9 @@
     backgroundZoom: { ja: "背景ズーム", en: "Background Zoom" },
     preview: { ja: "Preview", en: "Preview" },
     playPreview: { ja: "プレビュー再生", en: "Play Preview" },
+    audioVolume: { ja: "音量", en: "Volume" },
+    muteAudio: { ja: "ミュート", en: "Mute" },
+    unmuteAudio: { ja: "ミュート解除", en: "Unmute" },
     render: { ja: "Render", en: "Render" },
     browserOnly: { ja: "Browser only", en: "Browser only" },
     visualizer: { ja: "Visualizer", en: "Visualizer" },
@@ -176,6 +179,7 @@
   };
 
   const WORKSPACE_WIDTH_STORAGE_KEY = "banana-visualizer.workspace-widths";
+  const AUDIO_SETTINGS_STORAGE_KEY = "banana-visualizer.audio-settings";
   const MIN_LEFT_PANEL_WIDTH = 260;
   const MAX_LEFT_PANEL_WIDTH = 520;
   const MIN_RIGHT_PANEL_WIDTH = 280;
@@ -202,6 +206,12 @@
     backgroundFitLabel: document.getElementById("backgroundFitLabel"),
     backgroundZoomLabel: document.getElementById("backgroundZoomLabel"),
     previewLabel: document.getElementById("previewLabel"),
+    audioMuteButton: document.getElementById("audioMuteButton"),
+    audioVolumeLabel: document.getElementById("audioVolumeLabel"),
+    audioVolumeInput: document.getElementById("audioVolumeInput"),
+    audioVolumeValue: document.getElementById("audioVolumeValue"),
+    renderProgressOverlay: document.getElementById("renderProgressOverlay"),
+    renderProgressPercent: document.getElementById("renderProgressPercent"),
     renderHeading: document.getElementById("renderHeading"),
     renderHeadingNote: document.getElementById("renderHeadingNote"),
     visualizerSummary: document.getElementById("visualizerSummary"),
@@ -309,8 +319,10 @@
       context: null,
       analyser: null,
       source: null,
+      outputGain: null,
       destination: null
     },
+    audioSettings: readStoredAudioSettings(),
     animationFrame: 0,
     renderFrame: 0,
     isPreviewing: false,
@@ -341,12 +353,14 @@
     bindProjectMenu();
     bindInspector();
     bindPreview();
+    bindAudioControls();
     bindWorkspaceResize();
     els.audioElement.addEventListener("ended", handleAudioEnded);
     window.addEventListener("resize", drawPreview);
     applyWorkspaceWidths();
     syncFormFromState();
     applyStaticTexts();
+    applyAudioSettings();
     renderStaticState();
     drawPreview();
   }
@@ -408,6 +422,8 @@
     els.backgroundZoomLabel.textContent = t("backgroundZoom");
     els.previewLabel.textContent = t("preview");
     els.playButton.textContent = t("playPreview");
+    els.audioVolumeLabel.textContent = t("audioVolume");
+    syncAudioControls();
     els.renderHeading.textContent = t("render");
     els.renderHeadingNote.textContent = t("browserOnly");
     els.visualizerSummary.textContent = t("visualizer");
@@ -676,6 +692,15 @@
     canvas.addEventListener("pointerup", onCanvasPointerUp);
     canvas.addEventListener("pointercancel", onCanvasPointerUp);
     canvas.addEventListener("keydown", onCanvasKeyDown);
+  }
+
+  function bindAudioControls() {
+    els.audioMuteButton.addEventListener("click", toggleAudioMute);
+    els.audioVolumeInput.addEventListener("input", () => {
+      state.audioSettings.volume = clamp(Number(els.audioVolumeInput.value) / 100, 0, 1);
+      applyAudioSettings();
+      persistAudioSettings();
+    });
   }
 
   function bindWorkspaceResize() {
@@ -1114,6 +1139,35 @@
     updatePlaybackText();
   }
 
+  function toggleAudioMute() {
+    state.audioSettings.muted = !state.audioSettings.muted;
+    applyAudioSettings();
+    persistAudioSettings();
+  }
+
+  function applyAudioSettings() {
+    const { volume, muted } = state.audioSettings;
+    els.audioElement.volume = volume;
+    els.audioElement.muted = muted;
+    if (state.audioGraph.outputGain) {
+      state.audioGraph.outputGain.gain.value = muted ? 0 : volume;
+    }
+    syncAudioControls();
+  }
+
+  function syncAudioControls() {
+    if (!els.audioVolumeInput || !els.audioMuteButton) return;
+    const percent = Math.round(state.audioSettings.volume * 100);
+    els.audioVolumeInput.value = String(percent);
+    els.audioVolumeValue.textContent = `${percent}%`;
+    els.audioMuteButton.textContent = state.audioSettings.muted ? t("unmuteAudio") : t("muteAudio");
+    els.audioMuteButton.setAttribute("aria-pressed", String(state.audioSettings.muted));
+    els.audioMuteButton.setAttribute(
+      "aria-label",
+      state.audioSettings.muted ? t("unmuteAudio") : t("muteAudio")
+    );
+  }
+
   async function ensureAudioGraph() {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     if (!AudioContextClass) {
@@ -1124,11 +1178,14 @@
       state.audioGraph.context = new AudioContextClass();
       state.audioGraph.analyser = state.audioGraph.context.createAnalyser();
       state.audioGraph.analyser.fftSize = 2048;
+      state.audioGraph.outputGain = state.audioGraph.context.createGain();
       state.audioGraph.destination = state.audioGraph.context.createMediaStreamDestination();
       state.audioGraph.source = state.audioGraph.context.createMediaElementSource(els.audioElement);
       state.audioGraph.source.connect(state.audioGraph.analyser);
-      state.audioGraph.analyser.connect(state.audioGraph.context.destination);
+      state.audioGraph.analyser.connect(state.audioGraph.outputGain);
+      state.audioGraph.outputGain.connect(state.audioGraph.context.destination);
       state.audioGraph.analyser.connect(state.audioGraph.destination);
+      applyAudioSettings();
     }
 
     if (state.audioGraph.context.state === "suspended") {
@@ -1367,6 +1424,7 @@
     els.resultVideo.hidden = true;
     els.playButton.textContent = t("stop");
     els.playButton.disabled = true;
+    beginRenderPresentation();
     updateRenderProgress(0);
   }
 
@@ -1384,6 +1442,7 @@
     els.stopButton.hidden = false;
     els.playButton.textContent = t("stop");
     els.playButton.disabled = true;
+    beginRenderPresentation();
     updateRenderProgress(0);
   }
 
@@ -1402,6 +1461,7 @@
     els.stopButton.hidden = true;
     els.mp4Button.hidden = !state.urls.output;
     els.mp4Button.disabled = Boolean(state.urls.output) ? !canUseMp4() : true;
+    endRenderPresentation();
     els.playButton.disabled = false;
     els.playButton.textContent = t("playPreview");
   }
@@ -1437,6 +1497,28 @@
     state.renderFrame = window.requestAnimationFrame(tick);
   }
 
+  function beginRenderPresentation() {
+    els.previewCanvas.hidden = true;
+    els.previewCanvas.setAttribute("aria-hidden", "true");
+    els.renderProgressOverlay.hidden = false;
+    els.audioMuteButton.disabled = true;
+    els.audioVolumeInput.disabled = true;
+    els.audioElement.muted = true;
+    if (state.audioGraph.outputGain) {
+      state.audioGraph.outputGain.gain.value = 0;
+    }
+  }
+
+  function endRenderPresentation() {
+    els.previewCanvas.hidden = false;
+    els.previewCanvas.removeAttribute("aria-hidden");
+    els.renderProgressOverlay.hidden = true;
+    els.audioMuteButton.disabled = false;
+    els.audioVolumeInput.disabled = false;
+    applyAudioSettings();
+    drawPreview();
+  }
+
   function stopBackgroundRender() {
     if (state.renderFrame) {
       window.cancelAnimationFrame(state.renderFrame);
@@ -1450,6 +1532,7 @@
       ? `${t("mp4Converting")} ${percent}%`
       : t("renderProgress", { percent });
     setStatus(progressText);
+    els.renderProgressPercent.textContent = `${percent}%`;
     state.resultMeta = state.renderMode === "mp4"
       ? `${t("mp4Converting")} / ${percent}%`
       : `${t("renderingMeta")} / ${percent}%`;
@@ -2197,6 +2280,25 @@
     const parsed = Number(window.localStorage.getItem(key));
     if (!Number.isFinite(parsed)) return fallback;
     return clamp(parsed, min, max);
+  }
+
+  function readStoredAudioSettings() {
+    const fallback = { volume: 1, muted: false };
+    try {
+      const parsed = JSON.parse(window.localStorage.getItem(AUDIO_SETTINGS_STORAGE_KEY) || "null");
+      if (!parsed || typeof parsed !== "object") return fallback;
+      const volume = Number(parsed.volume);
+      return {
+        volume: Number.isFinite(volume) ? clamp(volume, 0, 1) : fallback.volume,
+        muted: parsed.muted === true
+      };
+    } catch {
+      return fallback;
+    }
+  }
+
+  function persistAudioSettings() {
+    window.localStorage.setItem(AUDIO_SETTINGS_STORAGE_KEY, JSON.stringify(state.audioSettings));
   }
 
   function roundEven(value) {
