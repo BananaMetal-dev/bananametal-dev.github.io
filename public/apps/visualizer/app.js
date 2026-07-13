@@ -49,7 +49,7 @@
     opacity: { ja: "透明度", en: "Opacity" },
     watermarkDragHint: { ja: "プレビュー上でドラッグして位置を変更", en: "Drag on the preview to move it." },
     export: { ja: "Export", en: "Export" },
-    startRender: { ja: "書き出し開始", en: "Start Render" },
+    startRender: { ja: "webM書き出し", en: "Render WebM" },
     stop: { ja: "停止", en: "Stop" },
     mp4Convert: { ja: "MP4に変換", en: "Convert to MP4" },
     mp4Download: { ja: "MP4をダウンロード", en: "Download MP4" },
@@ -451,6 +451,8 @@
     els.mp4Button.textContent = t("mp4Convert");
     els.downloadLink.textContent = t("download");
     els.mp4DownloadLink.textContent = t("mp4Download");
+    setWebmDownloadState(Boolean(state.urls.output));
+    setMp4DownloadState(Boolean(state.urls.mp4Output));
     els.outputNameLabel.textContent = t("outputName");
     els.speedLabel.textContent = t("outputSpeed");
     els.speedWarning.textContent = t("speedWarning");
@@ -1061,6 +1063,36 @@
     els.mp4DownloadLink.download = `${baseName}.mp4`;
   }
 
+  function setMp4DownloadState(active) {
+    const isActive = Boolean(active && state.urls.mp4Output);
+    els.mp4DownloadLink.classList.toggle("is-passive", !isActive);
+    els.mp4DownloadLink.classList.toggle("primary", isActive);
+    if (isActive) {
+      els.mp4DownloadLink.href = state.urls.mp4Output;
+      els.mp4DownloadLink.removeAttribute("aria-disabled");
+      els.mp4DownloadLink.removeAttribute("tabindex");
+      return;
+    }
+    els.mp4DownloadLink.removeAttribute("href");
+    els.mp4DownloadLink.setAttribute("aria-disabled", "true");
+    els.mp4DownloadLink.setAttribute("tabindex", "-1");
+  }
+
+  function setWebmDownloadState(active) {
+    const isActive = Boolean(active && state.urls.output);
+    els.downloadLink.classList.toggle("is-passive", !isActive);
+    els.downloadLink.classList.toggle("primary", isActive);
+    if (isActive) {
+      els.downloadLink.href = state.urls.output;
+      els.downloadLink.removeAttribute("aria-disabled");
+      els.downloadLink.removeAttribute("tabindex");
+      return;
+    }
+    els.downloadLink.removeAttribute("href");
+    els.downloadLink.setAttribute("aria-disabled", "true");
+    els.downloadLink.setAttribute("tabindex", "-1");
+  }
+
   function updateAssetStates() {
     const imageLoaded = Boolean(state.assets.image);
     const audioLoaded = Boolean(state.assets.audio);
@@ -1343,8 +1375,7 @@
         URL.revokeObjectURL(state.urls.mp4Output);
         state.urls.mp4Output = "";
       }
-      els.mp4DownloadLink.hidden = true;
-      els.mp4DownloadLink.removeAttribute("href");
+      setMp4DownloadState(false);
       state.renderCanvas = document.createElement("canvas");
       state.renderCanvas.width = state.project.layout.width;
       state.renderCanvas.height = state.project.layout.height;
@@ -1455,8 +1486,6 @@
     els.stopButton.hidden = false;
     els.mp4Button.hidden = true;
     els.mp4Button.disabled = true;
-    els.downloadLink.hidden = true;
-    els.mp4DownloadLink.hidden = true;
     els.resultVideo.hidden = true;
     els.playButton.textContent = t("stop");
     els.playButton.disabled = true;
@@ -1615,11 +1644,10 @@
     els.resultMeta.textContent = state.resultMeta;
     els.resultVideo.hidden = false;
     els.resultVideo.src = state.urls.output;
-    els.downloadLink.hidden = false;
     els.mp4Button.hidden = false;
     els.mp4Button.disabled = !canUseMp4();
-    els.downloadLink.href = state.urls.output;
-    els.mp4DownloadLink.hidden = true;
+    setWebmDownloadState(true);
+    setMp4DownloadState(false);
     els.mp4ResultMeta.hidden = true;
     setStatus(t("renderCompleted"));
     updatePlaybackText();
@@ -1628,8 +1656,7 @@
   function completeMp4Render(blob, renderedDuration) {
     state.urls.mp4Output = URL.createObjectURL(blob);
     resetRenderUi();
-    els.mp4DownloadLink.hidden = false;
-    els.mp4DownloadLink.href = state.urls.mp4Output;
+    setMp4DownloadState(true);
     els.mp4ResultMeta.hidden = false;
     els.mp4ResultMeta.textContent = `MP4: ${formatBytes(blob.size)} / ${renderedDuration.toFixed(1)} sec`;
     setStatus(t("mp4Completed"));
@@ -1640,10 +1667,8 @@
     els.resultVideo.hidden = true;
     els.resultVideo.removeAttribute("src");
     els.resultVideo.load();
-    els.downloadLink.hidden = true;
-    els.downloadLink.removeAttribute("href");
-    els.mp4DownloadLink.hidden = true;
-    els.mp4DownloadLink.removeAttribute("href");
+    setWebmDownloadState(false);
+    setMp4DownloadState(false);
     els.mp4Button.hidden = true;
     els.stopButton.hidden = true;
     if (state.urls.output) {

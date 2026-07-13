@@ -272,10 +272,22 @@
           <div class="collapsible-content">
             <div class="queue queue-inline" aria-label="Export status">
               <button id="renderButton" class="tool-button primary queue-start" type="button"></button>
-              <button id="stopButton" class="tool-button" type="button" disabled hidden></button>
+              <a
+                id="downloadLink"
+                class="tool-button is-passive"
+                aria-disabled="true"
+                tabindex="-1"
+                download="banana-visualizer-output.webm"
+              ></a>
               <button id="mp4Button" class="tool-button" type="button" disabled hidden></button>
-              <a id="downloadLink" class="tool-button primary" download="banana-visualizer-output.webm" hidden></a>
-              <a id="mp4DownloadLink" class="tool-button primary" download="banana-visualizer-output.mp4" hidden></a>
+              <a
+                id="mp4DownloadLink"
+                class="tool-button is-passive"
+                aria-disabled="true"
+                tabindex="-1"
+                download="banana-visualizer-output.mp4"
+              ></a>
+              <button id="stopButton" class="tool-button" type="button" disabled hidden></button>
             </div>
             <label class="field">
               <span id="outputNameLabel"></span>
