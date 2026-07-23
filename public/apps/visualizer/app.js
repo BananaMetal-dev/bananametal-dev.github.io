@@ -101,6 +101,9 @@
     audio: [".mp3", ".wav", ".ogg", ".m4a"],
     watermark: [".png", ".jpg", ".jpeg", ".webp"]
   };
+  const ANALYSER_MIN_DECIBELS = -90;
+  const ANALYSER_MAX_DECIBELS = -12;
+  const VISUALIZER_MIN_LEVEL = 0.02;
 
   const SIZE_PRESETS = [
     { id: "720", label: "720p", shortEdge: 720 },
@@ -1231,6 +1234,9 @@
       state.audioGraph.context = new AudioContextClass();
       state.audioGraph.analyser = state.audioGraph.context.createAnalyser();
       state.audioGraph.analyser.fftSize = 2048;
+      state.audioGraph.analyser.minDecibels = ANALYSER_MIN_DECIBELS;
+      state.audioGraph.analyser.maxDecibels = ANALYSER_MAX_DECIBELS;
+      state.audioGraph.analyser.smoothingTimeConstant = 0.72;
       state.audioGraph.outputGain = state.audioGraph.context.createGain();
       state.audioGraph.destination = state.audioGraph.context.createMediaStreamDestination();
       state.audioGraph.source = state.audioGraph.context.createMediaElementSource(els.audioElement);
@@ -1787,15 +1793,16 @@
         for (let i = start; i < end; i += 1) sum += source[i];
         const bandCenter = index / count;
         const gain = bandCenter < 0.33 ? lowGain : bandCenter < 0.66 ? midGain : highGain;
-        return Math.max(0.04, Math.min(1, (sum / (end - start) / 255) * gain));
+        return clamp((sum / (end - start) / 255) * gain, 0, 1);
       });
+      values = applySpatialSmoothing(values, Number(response.spatialSmoothing || 0));
     }
 
     return normalizeVisualizerValues(values);
   }
 
   function readAudioBufferValues(audioBuffer, timeSeconds, count) {
-    const fftSize = 1024;
+    const fftSize = 2048;
     const sampleRate = audioBuffer.sampleRate;
     if (!state.renderAudioAnalysis || state.renderAudioAnalysis.buffer !== audioBuffer) {
       state.renderAudioAnalysis = {
@@ -1806,7 +1813,9 @@
           { length: Math.min(2, audioBuffer.numberOfChannels) },
           (_, index) => audioBuffer.getChannelData(index)
         ),
-        edges: buildLogBandEdges(fftSize / 2, count, sampleRate)
+        edges: buildLogBandEdges(fftSize / 2, count, sampleRate),
+        previousValues: null,
+        lastTime: -Infinity
       };
     }
 
@@ -1835,18 +1844,44 @@
     const lowGain = Number(response.lowGain || 1.2);
     const midGain = Number(response.midGain || 1);
     const highGain = Number(response.highGain || 0.8);
-    const normalization = fftSize / 2;
-    const values = Array.from({ length: count }, (_, index) => {
+    const normalization = fftSize / 4;
+    let values = Array.from({ length: count }, (_, index) => {
       const startBin = analysis.edges[index];
       const endBin = Math.max(startBin + 1, analysis.edges[index + 1]);
-      let sum = 0;
+      let sumSquares = 0;
       for (let bin = startBin; bin < endBin; bin += 1) {
-        sum += Math.hypot(real[bin], imaginary[bin]) / normalization;
+        const magnitude = Math.hypot(real[bin], imaginary[bin]) / normalization;
+        sumSquares += magnitude * magnitude;
       }
+      const amplitude = Math.sqrt(sumSquares / (endBin - startBin));
+      const decibels = 20 * Math.log10(Math.max(amplitude, 1e-8));
+      const level = (decibels - ANALYSER_MIN_DECIBELS)
+        / (ANALYSER_MAX_DECIBELS - ANALYSER_MIN_DECIBELS);
       const bandCenter = index / count;
       const gain = bandCenter < 0.33 ? lowGain : bandCenter < 0.66 ? midGain : highGain;
-      return Math.max(0.04, Math.min(1, (sum / (endBin - startBin)) * gain));
+      return clamp(level * gain, 0, 1);
     });
+
+    values = applySpatialSmoothing(values, Number(response.spatialSmoothing || 0));
+    const frameGap = timeSeconds - analysis.lastTime;
+    if (
+      !analysis.previousValues
+      || analysis.previousValues.length !== values.length
+      || frameGap < 0
+      || frameGap > 0.25
+    ) {
+      analysis.previousValues = values.slice();
+    } else {
+      const release = clamp(Number(response.temporalSmoothing || 0.78), 0, 0.95);
+      values = values.map((value, index) => {
+        const previous = analysis.previousValues[index] || 0;
+        return value >= previous
+          ? previous * 0.2 + value * 0.8
+          : previous * release + value * (1 - release);
+      });
+      analysis.previousValues = values.slice();
+    }
+    analysis.lastTime = timeSeconds;
     return normalizeVisualizerValues(values);
   }
 
@@ -2099,12 +2134,17 @@
   }
 
   function normalizeVisualizerValues(values) {
-    let peak = 0;
-    values.forEach((value) => {
-      if (value > peak) peak = value;
+    return values.map((value) => clamp(Number(value) || 0, VISUALIZER_MIN_LEVEL, 1));
+  }
+
+  function applySpatialSmoothing(values, amount) {
+    const blend = clamp(amount, 0, 1) * 0.5;
+    if (blend <= 0 || values.length < 3) return values;
+    return values.map((value, index) => {
+      const previous = values[Math.max(0, index - 1)];
+      const next = values[Math.min(values.length - 1, index + 1)];
+      return value * (1 - blend) + ((previous + next) / 2) * blend;
     });
-    if (peak <= 0) return values.map(() => 0);
-    return values.map((value) => Math.max(0.12, value / peak));
   }
 
   function buildLogBandEdges(sampleCount, bandCount, sampleRate, lowCutHz = 21) {
