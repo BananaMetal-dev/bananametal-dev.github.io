@@ -104,6 +104,8 @@
   const ANALYSER_MIN_DECIBELS = -90;
   const ANALYSER_MAX_DECIBELS = -12;
   const VISUALIZER_MIN_LEVEL = 0.02;
+  const VISUALIZER_LOW_HZ = 32;
+  const VISUALIZER_HIGH_HZ = 14000;
 
   const SIZE_PRESETS = [
     { id: "720", label: "720p", shortEdge: 720 },
@@ -1787,8 +1789,7 @@
       const sampleRate = state.audioGraph.context ? state.audioGraph.context.sampleRate : 44100;
       const edges = buildLogBandEdges(source.length, count, sampleRate);
       values = Array.from({ length: count }, (_, index) => {
-        const start = edges[index];
-        const end = Math.max(start + 1, edges[index + 1]);
+        const { start, end } = readBandRange(edges, index, source.length);
         let sum = 0;
         for (let i = start; i < end; i += 1) sum += source[i];
         const bandCenter = index / count;
@@ -1846,8 +1847,11 @@
     const highGain = Number(response.highGain || 0.8);
     const normalization = fftSize / 4;
     let values = Array.from({ length: count }, (_, index) => {
-      const startBin = analysis.edges[index];
-      const endBin = Math.max(startBin + 1, analysis.edges[index + 1]);
+      const { start: startBin, end: endBin } = readBandRange(
+        analysis.edges,
+        index,
+        fftSize / 2
+      );
       let sumSquares = 0;
       for (let bin = startBin; bin < endBin; bin += 1) {
         const magnitude = Math.hypot(real[bin], imaginary[bin]) / normalization;
@@ -2147,23 +2151,35 @@
     });
   }
 
-  function buildLogBandEdges(sampleCount, bandCount, sampleRate, lowCutHz = 21) {
-    const highHz = Math.max(lowCutHz * 1.5, sampleRate / 2);
+  function buildLogBandEdges(
+    sampleCount,
+    bandCount,
+    sampleRate,
+    lowCutHz = VISUALIZER_LOW_HZ,
+    highCutHz = VISUALIZER_HIGH_HZ
+  ) {
+    const nyquistHz = sampleRate / 2;
+    const highHz = clamp(highCutHz, lowCutHz * 1.5, nyquistHz);
     const safeLowHz = Math.max(1, Math.min(lowCutHz, highHz - 1));
     const logLow = Math.log(safeLowHz);
     const logHigh = Math.log(highHz);
     const edges = Array.from({ length: bandCount + 1 }, (_, index) => {
       const t = index / bandCount;
       const hz = Math.exp(logLow + (logHigh - logLow) * t);
-      return clamp(Math.round(hz / highHz * sampleCount), 0, sampleCount);
+      return clamp(Math.round(hz / nyquistHz * sampleCount), 0, sampleCount);
     });
     for (let index = 1; index < edges.length; index += 1) {
-      if (edges[index] <= edges[index - 1]) {
-        edges[index] = Math.min(sampleCount, edges[index - 1] + 1);
-      }
+      edges[index] = Math.max(edges[index - 1], edges[index]);
     }
-    edges[edges.length - 1] = sampleCount;
     return edges;
+  }
+
+  function readBandRange(edges, index, sampleCount) {
+    const maxStart = Math.max(0, sampleCount - 1);
+    const start = clamp(edges[index], 0, maxStart);
+    const next = clamp(edges[index + 1], 0, sampleCount);
+    const end = Math.min(sampleCount, Math.max(start + 1, next));
+    return { start, end };
   }
 
   function clampImageTransform(transform, image, layout) {
