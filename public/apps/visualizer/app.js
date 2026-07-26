@@ -2003,6 +2003,7 @@
   }
 
   function drawRadial(ctx, values, bounds, accent, peak, isRing) {
+    const radialValues = blendRadialSeam(values);
     const centerX = bounds.x + bounds.width / 2;
     const centerY = bounds.y + bounds.height * 0.5;
     const radialSpan = Math.min(bounds.width, bounds.height);
@@ -2010,8 +2011,8 @@
     const amplitude = radialSpan * 0.18;
     if (isRing) {
       ctx.beginPath();
-      values.forEach((value, index) => {
-        const angle = (index / values.length) * Math.PI * 2 - Math.PI / 2;
+      radialValues.forEach((value, index) => {
+        const angle = (index / radialValues.length) * Math.PI * 2 - Math.PI / 2;
         const r = radius + value * amplitude;
         const x = centerX + Math.cos(angle) * r;
         const y = centerY + Math.sin(angle) * r;
@@ -2028,8 +2029,8 @@
       return;
     }
 
-    values.forEach((value, index) => {
-      const angle = (index / values.length) * Math.PI * 2 - Math.PI / 2;
+    radialValues.forEach((value, index) => {
+      const angle = (index / radialValues.length) * Math.PI * 2 - Math.PI / 2;
       const inner = radius;
       const outer = radius + value * amplitude;
       const x1 = centerX + Math.cos(angle) * inner;
@@ -2039,10 +2040,33 @@
       ctx.beginPath();
       ctx.moveTo(x1, y1);
       ctx.lineTo(x2, y2);
-      ctx.lineWidth = Math.max(1.4, radialSpan / values.length * 0.42);
+      ctx.lineWidth = Math.max(1.4, radialSpan / radialValues.length * 0.42);
       ctx.strokeStyle = value > 0.72 ? peak : accent;
       ctx.stroke();
     });
+  }
+
+  function blendRadialSeam(values) {
+    if (values.length < 8) return values;
+
+    const blended = values.slice();
+    const blendCount = Math.min(16, Math.max(4, Math.round(values.length * 0.08)));
+    const sampleCount = Math.min(4, blendCount);
+    let edgeTotal = 0;
+    for (let index = 0; index < sampleCount; index += 1) {
+      edgeTotal += values[index] + values[values.length - 1 - index];
+    }
+    const seamLevel = edgeTotal / (sampleCount * 2);
+
+    for (let offset = 0; offset < blendCount; offset += 1) {
+      const ratio = blendCount === 1 ? 1 : offset / (blendCount - 1);
+      const eased = ratio * ratio * (3 - 2 * ratio);
+      const endIndex = values.length - 1 - offset;
+      blended[offset] = lerp(seamLevel, values[offset], eased);
+      blended[endIndex] = lerp(seamLevel, values[endIndex], eased);
+    }
+
+    return blended;
   }
 
   function drawLedBars(ctx, values, bounds, accent, peak, base) {
