@@ -2200,14 +2200,116 @@
   function readVisualizerBounds(width, height) {
     const base = visualizerBoundsForSize(width, height);
     const offset = visualizerOffset();
-    const shiftedX = clamp(base.x + (offset.x * width) / state.project.layout.width, 0, Math.max(0, width - base.width));
-    const shiftedY = clamp(base.y + (offset.y * height) / state.project.layout.height, 0, Math.max(0, height - base.height));
+    const shiftedX = base.x + (offset.x * width) / state.project.layout.width;
+    const shiftedY = base.y + (offset.y * height) / state.project.layout.height;
+    return clampVisualizerBounds(base, shiftedX, shiftedY, width, height);
+  }
+
+  function clampVisualizerBounds(base, x, y, width, height) {
+    const paint = visualizerPaintBounds({ x: 0, y: 0, width: base.width, height: base.height });
+    const minX = -paint.x;
+    const maxX = width - (paint.x + paint.width);
+    const minY = -paint.y;
+    const maxY = height - (paint.y + paint.height);
     return {
-      x: shiftedX,
-      y: shiftedY,
+      x: clampVisualizerOrigin(x, minX, maxX),
+      y: clampVisualizerOrigin(y, minY, maxY),
       width: base.width,
       height: base.height
     };
+  }
+
+  function clampVisualizerOrigin(value, min, max) {
+    return min <= max ? clamp(value, min, max) : clamp(value, max, min);
+  }
+
+  function readVisualizerPaintBounds(width, height) {
+    return visualizerPaintBounds(readVisualizerBounds(width, height));
+  }
+
+  function visualizerPaintBounds(bounds) {
+    const shapeId = state.project.visualizer.shapeId;
+    const count = Math.min(160, Math.max(24, Number(state.project.visualizer.parameters.barCount || 96)));
+    let left;
+    let top;
+    let right;
+    let bottom;
+
+    if (shapeId === "line_spectrum" || shapeId === "filled_spectrum") {
+      left = bounds.x;
+      top = bounds.y + bounds.height * (0.985 - 0.92 * VISUALIZER_SOFT_LIMIT_CEILING);
+      right = bounds.x + bounds.width;
+      bottom = bounds.y + bounds.height * 0.985;
+    } else if (shapeId === "vertical_bars" || shapeId === "led_bars") {
+      const gap = shapeId === "led_bars" ? 4 : 3;
+      const minimumBarWidth = shapeId === "led_bars" ? 3 : 2;
+      const drawWidth = bounds.width * 0.88;
+      const barWidth = Math.max(
+        minimumBarWidth,
+        (drawWidth - gap * (count - 1)) / count
+      );
+      left = bounds.x + bounds.width * 0.06;
+      right = left + (count - 1) * (barWidth + gap) + barWidth;
+      top = bounds.y + bounds.height * (
+        shapeId === "led_bars"
+          ? 0.87 - 0.28
+          : 0.87 - 0.28 * VISUALIZER_SOFT_LIMIT_CEILING
+      );
+      bottom = bounds.y + bounds.height * 0.87;
+    } else {
+      const radialSpan = Math.min(bounds.width, bounds.height);
+      const outerRadius = radialSpan * (
+        0.24 + 0.18 * VISUALIZER_SOFT_LIMIT_CEILING
+      );
+      const centerX = bounds.x + bounds.width / 2;
+      const centerY = bounds.y + bounds.height / 2;
+      left = centerX - outerRadius;
+      top = centerY - outerRadius;
+      right = centerX + outerRadius;
+      bottom = centerY + outerRadius;
+    }
+
+    return {
+      x: left,
+      y: top,
+      width: Math.max(0, right - left),
+      height: Math.max(0, bottom - top)
+    };
+  }
+
+  function readVisualizerHitBounds(width, height) {
+    const layoutWidth = state.project.layout.width;
+    const layoutHeight = state.project.layout.height;
+    const paint = readVisualizerPaintBounds(layoutWidth, layoutHeight);
+    const scaleX = width / layoutWidth;
+    const scaleY = height / layoutHeight;
+    const hitPadding = 8;
+    const left = Math.max(0, paint.x * scaleX - hitPadding);
+    const top = Math.max(0, paint.y * scaleY - hitPadding);
+    const right = Math.min(width, (paint.x + paint.width) * scaleX + hitPadding);
+    const bottom = Math.min(height, (paint.y + paint.height) * scaleY + hitPadding);
+    return {
+      x: left,
+      y: top,
+      width: Math.max(0, right - left),
+      height: Math.max(0, bottom - top)
+    };
+  }
+
+  function moveVisualizerBy(deltaX, deltaY) {
+    const width = state.project.layout.width;
+    const height = state.project.layout.height;
+    const base = visualizerBoundsForSize(width, height);
+    const current = readVisualizerBounds(width, height);
+    const moved = clampVisualizerBounds(
+      base,
+      current.x + deltaX,
+      current.y + deltaY,
+      width,
+      height
+    );
+    state.project.visualizer.parameters.visualizerOffsetX = moved.x - base.x;
+    state.project.visualizer.parameters.visualizerOffsetY = moved.y - base.y;
   }
 
   function visualizerBoundsForSize(width, height) {
@@ -2329,7 +2431,7 @@
         return;
       }
     }
-    const bounds = readVisualizerBounds(rect.width, rect.height);
+    const bounds = readVisualizerHitBounds(rect.width, rect.height);
     const insideVisualizer = x >= bounds.x && x <= bounds.x + bounds.width && y >= bounds.y && y <= bounds.y + bounds.height;
     if (insideVisualizer) {
       state.drag = { kind: "visualizer", pointerId: event.pointerId, x: event.clientX, y: event.clientY };
@@ -2374,8 +2476,7 @@
       return;
     }
 
-    state.project.visualizer.parameters.visualizerOffsetX = clamp(Number(state.project.visualizer.parameters.visualizerOffsetX || 0) + deltaX, -state.project.layout.width, state.project.layout.width);
-    state.project.visualizer.parameters.visualizerOffsetY = clamp(Number(state.project.visualizer.parameters.visualizerOffsetY || 0) + deltaY, -state.project.layout.height, state.project.layout.height);
+    moveVisualizerBy(deltaX, deltaY);
     drawPreview();
   }
 
@@ -2389,19 +2490,19 @@
   function onCanvasKeyDown(event) {
     const step = event.shiftKey ? 24 : 12;
     if (event.key === "ArrowLeft") {
-      state.project.visualizer.parameters.visualizerOffsetX = clamp(Number(state.project.visualizer.parameters.visualizerOffsetX || 0) - step, -state.project.layout.width, state.project.layout.width);
+      moveVisualizerBy(-step, 0);
       drawPreview();
       event.preventDefault();
     } else if (event.key === "ArrowRight") {
-      state.project.visualizer.parameters.visualizerOffsetX = clamp(Number(state.project.visualizer.parameters.visualizerOffsetX || 0) + step, -state.project.layout.width, state.project.layout.width);
+      moveVisualizerBy(step, 0);
       drawPreview();
       event.preventDefault();
     } else if (event.key === "ArrowUp") {
-      state.project.visualizer.parameters.visualizerOffsetY = clamp(Number(state.project.visualizer.parameters.visualizerOffsetY || 0) - step, -state.project.layout.height, state.project.layout.height);
+      moveVisualizerBy(0, -step);
       drawPreview();
       event.preventDefault();
     } else if (event.key === "ArrowDown") {
-      state.project.visualizer.parameters.visualizerOffsetY = clamp(Number(state.project.visualizer.parameters.visualizerOffsetY || 0) + step, -state.project.layout.height, state.project.layout.height);
+      moveVisualizerBy(0, step);
       drawPreview();
       event.preventDefault();
     }
