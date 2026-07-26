@@ -108,6 +108,12 @@
   const VISUALIZER_HIGH_HZ = 14000;
   const VISUALIZER_LOW_EXPONENT = 1.28;
   const VISUALIZER_HIGH_EXPONENT = 0.52;
+  const VISUALIZER_INTERNAL_CEILING = 2.4;
+  const VISUALIZER_ADAPTIVE_TARGET = 0.82;
+  const VISUALIZER_ADAPTIVE_STEP = 0.9;
+  const VISUALIZER_ADAPTIVE_MIN_GAIN = 0.1;
+  const VISUALIZER_ADAPTIVE_WINDOW_RATIO = 0.045;
+  const VISUALIZER_ADAPTIVE_SMOOTHING_PASSES = 2;
   const VISUALIZER_SOFT_LIMIT_KNEE = 0.6;
   const VISUALIZER_SOFT_LIMIT_CEILING = 0.84;
 
@@ -1798,7 +1804,11 @@
         for (let i = start; i < end; i += 1) sum += source[i];
         const bandCenter = index / count;
         const gain = bandCenter < 0.33 ? lowGain : bandCenter < 0.66 ? midGain : highGain;
-        return clamp((sum / (end - start) / 255) * gain, 0, 1);
+        return clamp(
+          (sum / (end - start) / 255) * gain,
+          0,
+          VISUALIZER_INTERNAL_CEILING
+        );
       });
       values = applySpatialSmoothing(values, Number(response.spatialSmoothing || 0));
     }
@@ -1867,7 +1877,7 @@
         / (ANALYSER_MAX_DECIBELS - ANALYSER_MIN_DECIBELS);
       const bandCenter = index / count;
       const gain = bandCenter < 0.33 ? lowGain : bandCenter < 0.66 ? midGain : highGain;
-      return clamp(level * gain, 0, 1);
+      return clamp(level * gain, 0, VISUALIZER_INTERNAL_CEILING);
     });
 
     values = applySpatialSmoothing(values, Number(response.spatialSmoothing || 0));
@@ -2054,19 +2064,56 @@
   function balanceVisualizerValues(values) {
     if (values.length < 2) return values;
 
-    return values.map((value, index) => {
+    const frequencyBalanced = values.map((value, index) => {
       const ratio = index / (values.length - 1);
       const eased = ratio * ratio * (3 - 2 * ratio);
       const exponent = lerp(VISUALIZER_LOW_EXPONENT, VISUALIZER_HIGH_EXPONENT, eased);
-      const dynamicLevel = clamp(
-        (value - VISUALIZER_MIN_LEVEL) / (1 - VISUALIZER_MIN_LEVEL),
+      const dynamicLevel = Math.max(
         0,
-        1
+        (value - VISUALIZER_MIN_LEVEL) / (1 - VISUALIZER_MIN_LEVEL)
       );
-      const balanced = VISUALIZER_MIN_LEVEL
+      return VISUALIZER_MIN_LEVEL
         + Math.pow(dynamicLevel, exponent) * (1 - VISUALIZER_MIN_LEVEL);
-      return softLimitVisualizerLevel(balanced);
     });
+
+    return applyAdaptiveBandCompression(frequencyBalanced)
+      .map((value) => softLimitVisualizerLevel(value));
+  }
+
+  function applyAdaptiveBandCompression(values) {
+    if (values.length < 3) return values;
+
+    // A local fixed threshold keeps preview and offline exports deterministic.
+    const radius = Math.max(2, Math.round(values.length * VISUALIZER_ADAPTIVE_WINDOW_RATIO));
+    const targetGains = values.map((_, index) => {
+      let localPeak = 0;
+      const start = Math.max(0, index - radius);
+      const end = Math.min(values.length - 1, index + radius);
+      for (let neighbor = start; neighbor <= end; neighbor += 1) {
+        localPeak = Math.max(localPeak, values[neighbor]);
+      }
+
+      let gain = 1;
+      while (
+        localPeak * gain > VISUALIZER_ADAPTIVE_TARGET
+        && gain > VISUALIZER_ADAPTIVE_MIN_GAIN
+      ) {
+        gain *= VISUALIZER_ADAPTIVE_STEP;
+      }
+      return Math.max(VISUALIZER_ADAPTIVE_MIN_GAIN, gain);
+    });
+
+    let smoothedGains = targetGains;
+    for (let pass = 0; pass < VISUALIZER_ADAPTIVE_SMOOTHING_PASSES; pass += 1) {
+      smoothedGains = smoothedGains.map((gain, index, source) => {
+        const previous = source[Math.max(0, index - 1)];
+        const next = source[Math.min(source.length - 1, index + 1)];
+        const smoothed = (previous + gain * 2 + next) / 4;
+        return Math.min(smoothed, targetGains[index]);
+      });
+    }
+
+    return values.map((value, index) => value * smoothedGains[index]);
   }
 
   function softLimitVisualizerLevel(value) {
@@ -2199,7 +2246,11 @@
   }
 
   function normalizeVisualizerValues(values) {
-    return values.map((value) => clamp(Number(value) || 0, VISUALIZER_MIN_LEVEL, 1));
+    return values.map((value) => clamp(
+      Number(value) || 0,
+      VISUALIZER_MIN_LEVEL,
+      VISUALIZER_INTERNAL_CEILING
+    ));
   }
 
   function applySpatialSmoothing(values, amount) {
