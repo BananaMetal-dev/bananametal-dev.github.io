@@ -106,6 +106,10 @@
   const VISUALIZER_MIN_LEVEL = 0.02;
   const VISUALIZER_LOW_HZ = 32;
   const VISUALIZER_HIGH_HZ = 14000;
+  const VISUALIZER_LOW_EXPONENT = 1.28;
+  const VISUALIZER_HIGH_EXPONENT = 0.52;
+  const VISUALIZER_SOFT_LIMIT_KNEE = 0.6;
+  const VISUALIZER_SOFT_LIMIT_CEILING = 0.84;
 
   const SIZE_PRESETS = [
     { id: "720", label: "720p", shortEdge: 720 },
@@ -1931,17 +1935,18 @@
 
   function drawVisualizer(ctx, values, bounds, accent, peak, base) {
     const shapeId = state.project.visualizer.shapeId;
+    const displayValues = balanceVisualizerValues(values);
     ctx.shadowColor = accent;
     ctx.shadowBlur = 14;
 
     if (shapeId === "line_spectrum" || shapeId === "filled_spectrum") {
-      drawSpectrum(ctx, values, bounds, accent, peak, base, shapeId === "filled_spectrum");
+      drawSpectrum(ctx, displayValues, bounds, accent, peak, base, shapeId === "filled_spectrum");
     } else if (shapeId === "radial_bars" || shapeId === "ring_waveform") {
-      drawRadial(ctx, values, bounds, accent, peak, shapeId === "ring_waveform");
+      drawRadial(ctx, displayValues, bounds, accent, peak, shapeId === "ring_waveform");
     } else if (shapeId === "led_bars") {
-      drawLedBars(ctx, values, bounds, accent, peak, base);
+      drawLedBars(ctx, displayValues, bounds, accent, peak, base);
     } else {
-      drawVerticalBars(ctx, values, bounds, accent, peak);
+      drawVerticalBars(ctx, displayValues, bounds, accent, peak);
     }
 
     ctx.shadowBlur = 0;
@@ -2044,6 +2049,38 @@
       ctx.strokeStyle = value > 0.72 ? peak : accent;
       ctx.stroke();
     });
+  }
+
+  function balanceVisualizerValues(values) {
+    if (values.length < 2) return values;
+
+    return values.map((value, index) => {
+      const ratio = index / (values.length - 1);
+      const eased = ratio * ratio * (3 - 2 * ratio);
+      const exponent = lerp(VISUALIZER_LOW_EXPONENT, VISUALIZER_HIGH_EXPONENT, eased);
+      const dynamicLevel = clamp(
+        (value - VISUALIZER_MIN_LEVEL) / (1 - VISUALIZER_MIN_LEVEL),
+        0,
+        1
+      );
+      const balanced = VISUALIZER_MIN_LEVEL
+        + Math.pow(dynamicLevel, exponent) * (1 - VISUALIZER_MIN_LEVEL);
+      return softLimitVisualizerLevel(balanced);
+    });
+  }
+
+  function softLimitVisualizerLevel(value) {
+    if (value <= VISUALIZER_SOFT_LIMIT_KNEE) return value;
+
+    const ratio = clamp(
+      (value - VISUALIZER_SOFT_LIMIT_KNEE) / (1 - VISUALIZER_SOFT_LIMIT_KNEE),
+      0,
+      1
+    );
+    const curveStrength = 2.4;
+    const curved = (1 - Math.exp(-curveStrength * ratio))
+      / (1 - Math.exp(-curveStrength));
+    return lerp(VISUALIZER_SOFT_LIMIT_KNEE, VISUALIZER_SOFT_LIMIT_CEILING, curved);
   }
 
   function blendRadialSeam(values) {
