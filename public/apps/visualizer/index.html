@@ -107,8 +107,8 @@
           <summary id="projectSummary" class="collapsible-trigger"></summary>
           <div class="collapsible-content">
             <div class="segmented">
-              <button id="timelineSilentButton" type="button" class="active"></button>
-              <button id="timelineAudioButton" type="button"></button>
+              <button id="timelineSilentButton" type="button"></button>
+              <button id="timelineAudioButton" type="button" class="active"></button>
             </div>
             <label class="field">
               <span id="durationLabel"></span>
@@ -128,19 +128,19 @@
               <span id="aspectRatioLabel"></span>
               <div class="preset-buttons aspect-buttons" id="aspectPresetButtons"></div>
             </div>
-            <p id="canvasReadout" class="canvas-readout">1280 x 720</p>
+            <p id="canvasReadout" class="canvas-readout">720 x 720</p>
             <label class="field">
               <span id="frameRateLabel"></span>
               <select id="fpsSelect">
                 <option value="30">30 fps</option>
-                <option value="60">60 fps</option>
+                <option value="60" selected>60 fps</option>
               </select>
             </label>
             <label class="field">
               <span id="backgroundFitLabel"></span>
               <div class="segmented">
-                <button id="fitCropButton" type="button" class="active"></button>
-                <button id="fitLetterboxButton" type="button"></button>
+                <button id="fitCropButton" type="button"></button>
+                <button id="fitLetterboxButton" type="button" class="active"></button>
               </div>
             </label>
             <label class="field">
@@ -148,7 +148,7 @@
               <input id="zoomInput" type="range" min="0.3" max="3" step="0.01">
             </label>
             <div class="transform-row">
-              <span id="zoomValue">0.30x</span>
+              <span id="zoomValue">1.00x</span>
             </div>
           </div>
         </details>
@@ -167,14 +167,14 @@
                 <input id="audioVolumeInput" type="range" min="0" max="100" step="1" value="100">
                 <output id="audioVolumeValue">100%</output>
               </label>
-              <span id="previewReadout">1280 x 720 / 30fps</span>
+              <span id="previewReadout">720 x 720 / 60fps</span>
             </div>
           </div>
           <div id="previewFrame" class="preview-frame">
             <canvas
               id="previewCanvas"
               class="preview-canvas is-draggable"
-              width="1280"
+              width="720"
               height="720"
               tabindex="0"
             ></canvas>
@@ -256,10 +256,10 @@
             </label>
             <label class="field">
               <span id="watermarkOpacityLabel"></span>
-              <input id="watermarkOpacityInput" type="range" min="0" max="100" step="1">
+              <input id="watermarkOpacityInput" type="range" min="0" max="100" step="1" value="30">
             </label>
             <div class="transform-row">
-              <span id="watermarkOpacityValue">58%</span>
+              <span id="watermarkOpacityValue">30%</span>
             </div>
             <div class="transform-row">
               <span id="watermarkDragHint"></span>

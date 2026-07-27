@@ -492,14 +492,14 @@
       name: "Banana Visualizer Project",
       assets: {},
       timeline: {
-        mode: "silent",
+        mode: "audio_full_length",
         durationSeconds: 10
       },
       layout: {
-        width: 1080,
-        height: 1080,
-        fps: 30,
-        fitMode: "crop"
+        width: 720,
+        height: 720,
+        fps: 60,
+        fitMode: "letterbox"
       },
       imageTransform: {
         zoom: 1,
@@ -522,7 +522,7 @@
         size: "medium",
         positionX: 0.84,
         positionY: 0.84,
-        opacity: 58
+        opacity: 30
       },
       export: {
         outputName: "banana-visualizer-output.webm",
@@ -834,10 +834,10 @@
     if (kind === "image") {
       state.media.image = await loadImage(state.urls.image);
       state.project.imageTransform = { zoom: 1, offsetX: 0, offsetY: 0 };
-      state.project.layout.fitMode = "crop";
       els.imageDrop.open = false;
     } else if (kind === "audio") {
       state.media.audio = file;
+      state.project.export.outputName = outputNameForAudioFile(file.name);
       els.audioElement.src = state.urls.audio;
       els.audioElement.load();
       els.audioDrop.open = false;
@@ -966,7 +966,6 @@
     const dimensions = dimensionsForPreset(aspectId, sizeId);
     state.project.layout.width = dimensions.width;
     state.project.layout.height = dimensions.height;
-    state.project.layout.fitMode = "crop";
     syncFormFromState();
     drawPreview();
   }
@@ -2599,6 +2598,12 @@
   function sanitizeOutputName(value) {
     const next = String(value || "").trim().replace(/[<>:\"/\\\\|?*]+/g, "-");
     return next || "banana-visualizer-output.webm";
+  }
+
+  function outputNameForAudioFile(fileName) {
+    const sourceName = String(fileName || "").trim();
+    const baseName = sourceName.replace(/\.[^.]+$/, "").trim() || "banana-visualizer-output";
+    return sanitizeOutputName(`${baseName} Visualizer.webm`);
   }
 
   function pickMimeType() {
