@@ -20,6 +20,27 @@ export type AppEntry = {
 export const apps: AppEntry[] = [
   {
     name: {
+      ja: "Banana Key Changer",
+      en: "Banana Key Changer",
+    },
+    status: "available",
+    description: {
+      ja: "端末内の音楽を、テンポを保った指定キーで再生し、WAV保存するブラウザアプリです。",
+      en: "A local browser audio player with real-time key shifting and WAV export.",
+    },
+    features: [
+      { ja: ".mp3 / .m4a / .wav とサブフォルダに対応", en: "Supports MP3, M4A, WAV, and subfolders" },
+      { ja: "半音単位でキーを変更", en: "Changes key in semitone steps" },
+      { ja: "現在曲をWAVで保存", en: "Exports the current track as WAV" },
+    ],
+    notes: [
+      { ja: "音源は端末内だけで処理されます", en: "Audio is processed only on your device" },
+      { ja: "Android Chrome / Windows Chrome向け", en: "Designed for Android Chrome and Windows Chrome" },
+    ],
+    url: "/apps/key-player/",
+  },
+  {
+    name: {
       ja: "音楽ビジュアライザー",
       en: "Music Visualizer",
     },
