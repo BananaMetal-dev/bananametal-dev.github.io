@@ -65,6 +65,19 @@ The browser visualizer lives in `public/apps/visualizer/`.
 - Phase 1 exports WebM only.
 - MP4 conversion is planned for a later phase and is not included in the current build.
 
+## Banana Key Changer
+
+The browser key player lives at `/apps/key-player/`.
+
+- Selects a local folder and scans `.mp3`, `.m4a`, and `.wav` files, including subfolders.
+- Keeps decoded audio for the current and next track only.
+- Changes key in semitone steps during playback.
+- Exports the current track as 16-bit PCM WAV.
+- Audio files stay in the browser and are not uploaded.
+
+SoundTouchJS is used under the Mozilla Public License 2.0. The bundled notice is available at
+`public/apps/key-player/SOUNDTOUCHJS_LICENSE.txt`.
+
 ## Editing Songs
 
 Music data is managed manually in `public/data/songs.json`.
@@ -131,6 +144,7 @@ URLs to verify after deployment:
 
 - `https://bananametal-dev.github.io/`
 - `https://bananametal-dev.github.io/apps/`
+- `https://bananametal-dev.github.io/apps/key-player/`
 - `https://bananametal-dev.github.io/music/`
 - `https://bananametal-dev.github.io/contact/`
 - `https://bananametal-dev.github.io/privacy/`

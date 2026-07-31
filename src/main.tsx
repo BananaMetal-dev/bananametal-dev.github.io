@@ -1,8 +1,12 @@
-import { StrictMode, useEffect, useState, type CSSProperties } from "react";
+import { StrictMode, Suspense, lazy, useEffect, useState, type CSSProperties } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
 import { apps, statusLabelMap, type AppEntry, type Language, type LocalizedText } from "./data/apps";
 import { googleFormUrl } from "./config/site";
+
+const KeyPlayerPage = lazy(() =>
+  import("./key-player/KeyPlayerPage").then((module) => ({ default: module.KeyPlayerPage })),
+);
 
 type PageKey = "home" | "apps" | "music" | "contact" | "privacy" | "not-found";
 type SongEntry = {
@@ -827,14 +831,16 @@ function Footer({ language }: { language: Language }) {
 }
 
 function App() {
+  const isKeyPlayer = normalizePath(window.location.pathname) === "/apps/key-player";
   const currentPage = getCurrentPage();
   const [language, setLanguage] = useState<Language>(() => readStoredLanguage());
 
   useEffect(() => {
+    if (isKeyPlayer) return;
     applyDocumentLanguage(language);
     writeStoredLanguage(language);
     applyPageMeta(currentPage, language);
-  }, [currentPage, language]);
+  }, [currentPage, isKeyPlayer, language]);
 
   useEffect(() => {
     const onStorage = (event: StorageEvent) => {
@@ -844,6 +850,14 @@ function App() {
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
   }, []);
+
+  if (isKeyPlayer) {
+    return (
+      <Suspense fallback={<main className="page-shell">Banana Key Changerを読み込んでいます</main>}>
+        <KeyPlayerPage />
+      </Suspense>
+    );
+  }
 
   return (
     <>
