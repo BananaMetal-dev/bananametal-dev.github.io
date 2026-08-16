@@ -1,5 +1,6 @@
 import visualizerPreview from "../assets/apps/visualizer-preview.png";
 import promptManagerPreview from "../assets/apps/prompt-manager-preview.png";
+import bananaKeyChangerPreview from "../assets/apps/banana-key-changer-preview.png";
 
 export type Language = "ja" | "en";
 export type AppStatus = "available" | "coming_soon" | "private";
@@ -38,6 +39,8 @@ export const apps: AppEntry[] = [
       { ja: "Android Chrome / Windows Chrome向け", en: "Designed for Android Chrome and Windows Chrome" },
     ],
     url: "/apps/key-player/",
+    previewImage: bananaKeyChangerPreview,
+    previewAspectRatio: "4 / 3",
   },
   {
     name: {
@@ -60,7 +63,7 @@ export const apps: AppEntry[] = [
     ],
     url: "/apps/visualizer/",
     previewImage: visualizerPreview,
-    previewAspectRatio: "1074 / 819",
+    previewAspectRatio: "4 / 3",
   },
   {
     name: {
@@ -83,7 +86,7 @@ export const apps: AppEntry[] = [
     ],
     url: "/apps/prompt-generator/",
     previewImage: promptManagerPreview,
-    previewAspectRatio: "1065 / 786",
+    previewAspectRatio: "4 / 3",
   },
 ];
 
