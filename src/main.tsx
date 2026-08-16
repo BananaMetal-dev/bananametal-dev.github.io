@@ -3,12 +3,13 @@ import { createRoot } from "react-dom/client";
 import "./styles.css";
 import { apps, statusLabelMap, type AppEntry, type Language, type LocalizedText } from "./data/apps";
 import { googleFormUrl } from "./config/site";
+import { MusicPreviewPage } from "./music-preview/MusicPreviewPage";
 
 const KeyPlayerPage = lazy(() =>
   import("./key-player/KeyPlayerPage").then((module) => ({ default: module.KeyPlayerPage })),
 );
 
-type PageKey = "home" | "apps" | "music" | "contact" | "privacy" | "not-found";
+type PageKey = "home" | "apps" | "music" | "music-preview" | "contact" | "privacy" | "not-found";
 type SongEntry = {
   id: string;
   siteVisible: boolean;
@@ -67,6 +68,10 @@ const localized = {
       ja: { title: "Music | Banana Metal", description: "Banana Metal の公開用楽曲データと YouTube への外部リンクを掲載しています。" },
       en: { title: "Music | Banana Metal", description: "Published song data and YouTube links from Banana Metal." },
     },
+    "music-preview": {
+      ja: { title: "Music Preview | Banana Metal", description: "オリジナル曲とカラオケ音源を検索できる新Musicページのデザイン検証版です。" },
+      en: { title: "Music Preview | Banana Metal", description: "A design preview for browsing BananaMetal originals and karaoke tracks." },
+    },
     contact: {
       ja: { title: "Contact | Banana Metal", description: "アプリの不具合、機能要望、楽曲、仕事や連携についての問い合わせ案内です。" },
       en: { title: "Contact | Banana Metal", description: "Contact guidance for app bugs, feature requests, music, work, and collaboration." },
@@ -95,6 +100,11 @@ const localized = {
       title: { ja: "Music", en: "Music" },
       lead: { ja: "公開用の楽曲データを読み込み、YouTubeへの外部リンクとして表示します。", en: "Loads published song data and presents it with YouTube links." },
       body: { ja: "初期版では public/data/songs.json を手動編集して楽曲一覧を管理します。", en: "In the initial version, songs are managed by editing public/data/songs.json manually." },
+    },
+    "music-preview": {
+      title: { ja: "Music Preview", en: "Music Preview" },
+      lead: { ja: "新Musicページのデザイン検証版です。", en: "A design preview for the new Music page." },
+      body: { ja: "既存Musicページとは別に表示します。", en: "This is displayed separately from the current Music page." },
     },
     contact: {
       title: { ja: "Contact", en: "Contact" },
@@ -277,6 +287,8 @@ function getCurrentPage(): PageKey {
       return "apps";
     case "/music":
       return "music";
+    case "/music-preview":
+      return "music-preview";
     case "/contact":
       return "contact";
     case "/privacy":
@@ -774,7 +786,7 @@ function Header({ currentPage, language, onLanguageChange }: { currentPage: Page
       <div className="header-actions">
         <nav className="site-nav" aria-label={t(language, localized.language.label)}>
           {navItems.map((item) => (
-            <a key={item.href} href={item.href} aria-current={currentPage === item.page ? "page" : undefined}>
+            <a key={item.href} href={item.href} aria-current={currentPage === item.page || (currentPage === "music-preview" && item.page === "music") ? "page" : undefined}>
               {t(language, item.label)}
             </a>
           ))}
@@ -788,7 +800,7 @@ function Header({ currentPage, language, onLanguageChange }: { currentPage: Page
 function PageBody({ currentPage, language }: { currentPage: PageKey; language: Language }) {
   const content = localized.pageContent[currentPage];
   if (currentPage === "apps") return <AppsPage language={language} />;
-  if (currentPage === "music") return <MusicPage language={language} />;
+  if (currentPage === "music" || currentPage === "music-preview") return <MusicPreviewPage language={language} />;
   if (currentPage === "contact") return <ContactPage language={language} />;
   if (currentPage === "privacy") return <PrivacyPage language={language} />;
 

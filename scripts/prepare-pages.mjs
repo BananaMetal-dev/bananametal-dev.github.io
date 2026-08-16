@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { dirname, extname, join, basename } from "node:path";
 
 const distDir = "dist";
-const routeDirs = ["apps", "apps/key-player", "music", "contact", "privacy"];
+const routeDirs = ["apps", "apps/key-player", "music", "music-preview", "contact", "privacy"];
 const sourceIndex = join(distDir, "index.html");
 
 await Promise.all(
