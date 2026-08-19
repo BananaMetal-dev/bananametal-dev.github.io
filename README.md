@@ -78,6 +78,30 @@ The browser key player lives at `/apps/key-player/`.
 SoundTouchJS is used under the Mozilla Public License 2.0. The bundled notice is available at
 `public/apps/key-player/SOUNDTOUCHJS_LICENSE.txt`.
 
+## WAV / MP3 Batch Converter
+
+The browser-only converter is available at `/apps/wav-mp3-converter/`.
+
+- Converts WAV to MP3 using `wasm-media-encoders` and the bundled LAME WASM encoder.
+- Converts MP3 to 16-bit PCM WAV using `mpg123-decoder` and the bundled mpg123 WASM decoder.
+- Supports multiple files, folders, subfolders, drag and drop, parallel Web Workers, cancellation, and per-file results.
+- WAV input supports PCM 8/16/24/32-bit, 32-bit float, and WAVE_FORMAT_EXTENSIBLE PCM/float for mono or stereo files.
+- Direct folder output uses the File System Access API in supported browsers. Other browsers use downloads.
+- Input audio is never uploaded. No backend, CDN codec, analytics, or telemetry is used.
+- Chrome and Edge on desktop are the primary supported browsers.
+
+Commands:
+
+```bash
+npm run typecheck
+npm run test:run
+npm run test:e2e
+npm run build
+```
+
+Third-party notices are listed in `THIRD_PARTY_NOTICES.md`. License texts are stored in `licenses/` and are included in the published site under `/licenses/wav-mp3/`.
+The E2E suite uses an installed Google Chrome browser through Playwright.
+
 ## Editing Songs
 
 Music data is managed manually in `public/data/songs.json`.
