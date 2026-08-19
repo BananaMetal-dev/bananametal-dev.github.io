@@ -1,6 +1,7 @@
 import visualizerPreview from "../assets/apps/visualizer-preview.png";
 import promptManagerPreview from "../assets/apps/prompt-manager-preview.png";
 import bananaKeyChangerPreview from "../assets/apps/banana-key-changer-preview.png";
+import wavMp3ConverterPreview from "../assets/apps/wav-mp3-converter-preview.png";
 
 export type Language = "ja" | "en";
 export type AppStatus = "available" | "coming_soon" | "private";
@@ -19,6 +20,29 @@ export type AppEntry = {
 };
 
 export const apps: AppEntry[] = [
+  {
+    name: {
+      ja: "WAV ⇄ MP3 バッチ変換",
+      en: "WAV ⇄ MP3 Batch Converter",
+    },
+    status: "available",
+    description: {
+      ja: "WAVとMP3を端末内で相互変換する、複数ファイル・フォルダ対応のブラウザアプリです。",
+      en: "A browser-only batch converter for WAV and MP3 files, with folder and subfolder support.",
+    },
+    features: [
+      { ja: "WAVからMP3、MP3からWAVへ相互変換", en: "Converts WAV to MP3 and MP3 to WAV" },
+      { ja: "複数ファイルとサブフォルダを一括処理", en: "Batch processing for files and subfolders" },
+      { ja: "Workerによる並列変換", en: "Parallel conversion with Web Workers" },
+    ],
+    notes: [
+      { ja: "音声ファイルは端末内だけで処理されます", en: "Audio files are processed only on your device" },
+      { ja: "デスクトップ版Chrome / Edgeを推奨", en: "Desktop Chrome / Edge recommended" },
+    ],
+    url: "/apps/wav-mp3-converter/",
+    previewImage: wavMp3ConverterPreview,
+    previewAspectRatio: "36 / 25",
+  },
   {
     name: {
       ja: "Banana Key Changer",
