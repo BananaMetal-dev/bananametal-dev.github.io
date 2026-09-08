@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@soundtouchjs/audio-worklet": "^2.1.0",
+    "lucide-react": "^1.41.0",
     "mediabunny": "1.50.8",
     "mpg123-decoder": "^1.0.3",
     "react": "^19.0.0",

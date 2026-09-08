@@ -2,6 +2,7 @@ import visualizerPreview from "../assets/apps/visualizer-preview.png";
 import promptManagerPreview from "../assets/apps/prompt-manager-preview.png";
 import bananaKeyChangerPreview from "../assets/apps/banana-key-changer-preview.png";
 import wavMp3ConverterPreview from "../assets/apps/wav-mp3-converter-preview.png";
+import guideVocalPlayerPreview from "../assets/apps/guide-vocal-player-preview.png";
 
 export type Language = "ja" | "en";
 export type AppStatus = "available" | "coming_soon" | "private";
@@ -20,6 +21,29 @@ export type AppEntry = {
 };
 
 export const apps: AppEntry[] = [
+  {
+    name: {
+      ja: "Guide Vocal Player",
+      en: "Guide Vocal Player",
+    },
+    status: "available",
+    description: {
+      ja: "ON VocalとOFF Vocalを同期再生し、モニター用と配信用のガイド量を個別に調整できるブラウザアプリです。",
+      en: "A browser app that synchronizes ON and OFF vocal tracks with independent guide mixes for monitoring and streaming.",
+    },
+    features: [
+      { ja: "ON / OFF Vocalを同一クロックで同期再生", en: "Synchronized ON / OFF vocal playback on one audio clock" },
+      { ja: "モニター用と配信用のGuide Mixを個別調整", en: "Independent guide mixes for monitoring and streaming" },
+      { ja: "LRC歌詞、音源Offset、曲別設定保存に対応", en: "LRC lyrics, audio offset, and per-song settings" },
+    ],
+    notes: [
+      { ja: "音源と設定は端末内だけで処理・保存されます", en: "Audio and settings are processed and stored only on your device" },
+      { ja: "Windows版Chrome / Edgeを推奨", en: "Windows Chrome / Edge recommended" },
+    ],
+    url: "/apps/guide-vocal-player/",
+    previewImage: guideVocalPlayerPreview,
+    previewAspectRatio: "3 / 2",
+  },
   {
     name: {
       ja: "WAV ⇄ MP3 バッチ変換",

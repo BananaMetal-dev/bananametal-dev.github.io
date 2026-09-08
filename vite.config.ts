@@ -9,6 +9,7 @@ export default defineConfig({
       input: {
         main: "index.html",
         wavMp3Converter: "apps/wav-mp3-converter/index.html",
+        guideVocalPlayer: "apps/guide-vocal-player/index.html",
       },
     },
   },
