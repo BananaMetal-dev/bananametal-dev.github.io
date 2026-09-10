@@ -45,6 +45,7 @@ for (const target of fingerprintTargets) {
 const htmlFiles = await collectHtmlFiles(distDir);
 for (const htmlFile of htmlFiles) {
   const htmlPath = join(distDir, htmlFile);
+  const htmlDir = normalizeUrlPath(dirname(htmlFile));
   let html = await readFile(htmlPath, "utf8");
 
   for (const [originalPath, fingerprintedPath] of rewrittenAssets.entries()) {
@@ -62,7 +63,10 @@ for (const htmlFile of htmlFiles) {
       continue;
     }
 
-    if (originalPath.endsWith("styles.css")) {
+    if (
+      originalPath.endsWith("styles.css") &&
+      htmlDir === normalizeUrlPath(dirname(originalPath))
+    ) {
       html = html.replaceAll(
         new RegExp(`href="(?:\\./|/)?styles\\.css(?:\\?[^"]*)?"`, "g"),
         `href="${fingerprintedUrl}"`,
@@ -70,7 +74,10 @@ for (const htmlFile of htmlFiles) {
       continue;
     }
 
-    if (originalPath.endsWith("app.js")) {
+    if (
+      originalPath.endsWith("app.js") &&
+      htmlDir === normalizeUrlPath(dirname(originalPath))
+    ) {
       html = html.replaceAll(
         new RegExp(`src="(?:\\./|/)?app\\.js"`, "g"),
         `src="${fingerprintedUrl}"`,
@@ -78,7 +85,10 @@ for (const htmlFile of htmlFiles) {
       continue;
     }
 
-    if (originalPath.endsWith("mediabunny.js") || originalPath.endsWith("webcodecs-renderer.js")) {
+    if (
+      (originalPath.endsWith("mediabunny.js") || originalPath.endsWith("webcodecs-renderer.js")) &&
+      htmlDir === normalizeUrlPath(dirname(originalPath))
+    ) {
       html = html.replaceAll(
         new RegExp(`src="(?:\\./|/)?${basename(originalPath, ".js")}\\.js"`, "g"),
         `src="${fingerprintedUrl}"`,
