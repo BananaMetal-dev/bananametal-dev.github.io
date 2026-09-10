@@ -132,6 +132,7 @@
     buttonEnableLabel: document.getElementById("buttonEnableLabel"),
     dataTitle: document.getElementById("dataTitle"),
     singleCopyTitle: document.getElementById("singleCopyTitle"),
+    copyBoardHint: document.getElementById("copyBoardHint"),
     copyColumnsLabel: document.getElementById("copyColumnsLabel"),
     copyRowsLabel: document.getElementById("copyRowsLabel"),
     contentLayout: document.querySelector(".content-layout"),

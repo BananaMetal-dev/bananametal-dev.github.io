@@ -1182,3 +1182,337 @@ body.theme-steampunk .join-mode-toggle input:checked + .toggle-track {
     --cell-h: 64px;
   }
 }
+
+/* Banana Key Changer palette: keep both themes in the same dark metal family. */
+:root,
+body.theme-steampunk {
+  --bg: #090807;
+  --surface: #17100c;
+  --surface-alt: #24180f;
+  --text: #f2ead9;
+  --muted: #aa9a84;
+  --line: rgba(214, 166, 91, 0.28);
+  --line-strong: #72502b;
+  --accent: #b47b32;
+  --accent-strong: #d19a4d;
+  --danger: #ff9a73;
+  --danger-bg: #3a1911;
+  --topbar-bg: #17100c;
+  --topbar-line: #72502b;
+  --sheetbar-bg: #15100c;
+  --sheetbar-line: #5a3919;
+  --output-bg: #15110e;
+  --output-line: #5a3919;
+  --sheet-manager-bg: #1b130e;
+  --sheet-manager-line: #72502b;
+  --board-bg: #120f0c;
+  --board-line: #5a3919;
+  --edit-bg: #1b130e;
+  --edit-line: #72502b;
+  --copy-bg: #18110d;
+  --copy-line: #72502b;
+  --shadow: 0 14px 34px rgba(0, 0, 0, 0.46);
+}
+
+body,
+body.theme-steampunk {
+  background:
+    radial-gradient(circle at 12% 8%, rgba(180, 123, 50, 0.16), transparent 28%),
+    radial-gradient(circle at 88% 12%, rgba(114, 170, 165, 0.1), transparent 24%),
+    repeating-linear-gradient(90deg, rgba(224, 182, 106, 0.025) 0 1px, transparent 1px 34px),
+    linear-gradient(135deg, #090807 0%, #21170f 52%, #0c0d0c 100%);
+}
+
+.topbar,
+body.theme-steampunk .topbar {
+  background:
+    linear-gradient(90deg, rgba(180, 123, 50, 0.16), transparent 34%, rgba(114, 170, 165, 0.08)),
+    linear-gradient(180deg, #1d140f 0%, #0d0b09 100%);
+  border-color: var(--topbar-line);
+  color: var(--text);
+}
+
+.brand-block h1 {
+  color: var(--brass-light, #e0b66a);
+  font-family: Georgia, "Yu Mincho", "Yu Gothic UI", serif;
+  letter-spacing: 0.025em;
+}
+
+.brand-block p,
+.board-toolbar p,
+.output-header p,
+.small-note,
+body.theme-steampunk .brand-block p,
+body.theme-steampunk .topbar .toggle-text,
+body.theme-steampunk .topbar .save-status {
+  color: var(--muted);
+}
+
+.language-toggle {
+  border-color: var(--line-strong);
+  background: #0d0b09;
+}
+
+.language-toggle-button {
+  color: var(--muted);
+}
+
+.language-toggle-button.is-active,
+.icon-button,
+.primary-button,
+body.theme-steampunk .icon-button,
+body.theme-steampunk .primary-button {
+  border: 1px solid #e0b66a;
+  background: linear-gradient(180deg, #d19a4d 0%, #9c6527 100%);
+  color: #120d09;
+  box-shadow: inset 0 1px 0 rgba(255, 244, 211, 0.28);
+}
+
+.primary-button:hover {
+  background: linear-gradient(180deg, #e0b66a 0%, #b47b32 100%);
+}
+
+.app-back-link,
+.secondary-button,
+body.theme-steampunk .app-back-link,
+body.theme-steampunk .secondary-button {
+  border-color: var(--line-strong);
+  background: linear-gradient(180deg, #2a1d14 0%, #17100c 100%);
+  color: var(--text);
+}
+
+.app-back-link:hover,
+.secondary-button:hover {
+  background: #342217;
+  border-color: #b47b32;
+}
+
+.app-back-link:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline-color: #e0b66a;
+}
+
+.save-status.saving {
+  color: #e0b66a;
+}
+
+.save-status.error {
+  color: #ff9a73;
+}
+
+.toggle-track,
+body.theme-steampunk .toggle-track {
+  border: 1px solid var(--line-strong);
+  background: #322419;
+}
+
+.toggle-track::after {
+  background: #d8c8ae;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+.edit-toggle input:checked + .toggle-track,
+.join-mode-toggle input:checked + .toggle-track,
+.theme-toggle input:checked + .toggle-track,
+body.theme-steampunk .edit-toggle input:checked + .toggle-track,
+body.theme-steampunk .join-mode-toggle input:checked + .toggle-track {
+  background: #72aaa5;
+}
+
+.sheet-bar,
+body.theme-steampunk .sheet-bar {
+  background: linear-gradient(180deg, #1b130e 0%, #0d0b09 100%);
+  border-color: var(--sheetbar-line);
+}
+
+.local-note,
+body.theme-steampunk .local-note {
+  border-color: rgba(114, 170, 165, 0.38);
+  background: rgba(12, 24, 23, 0.88);
+  color: #b9d8d4;
+}
+
+.sheet-tab,
+body.theme-steampunk .sheet-tab {
+  border-color: #5a3919;
+  background: linear-gradient(180deg, #2b1d13 0%, #17100c 100%);
+  color: #c4b49e;
+}
+
+.sheet-tab.active,
+body.theme-steampunk .sheet-tab.active {
+  border-color: #b47b32;
+  background: linear-gradient(180deg, #4b321c 0%, #2b1c12 100%);
+  color: #f3d69a;
+  box-shadow: inset 0 -2px 0 #e0b66a;
+}
+
+.column-resizer:hover::before,
+.column-resizer:focus-visible::before,
+body.resizing-columns .column-resizer::before {
+  box-shadow: 0 0 0 3px rgba(224, 182, 106, 0.14);
+}
+
+.board-panel,
+.sheet-manager-panel,
+.edit-panel,
+.output-panel,
+.quick-copy-panel,
+body.theme-steampunk .board-panel,
+body.theme-steampunk .sheet-manager-panel,
+body.theme-steampunk .edit-panel,
+body.theme-steampunk .output-panel,
+body.theme-steampunk .quick-copy-panel {
+  background:
+    linear-gradient(145deg, rgba(224, 182, 106, 0.035), transparent 42%),
+    linear-gradient(180deg, rgba(33, 23, 15, 0.98) 0%, rgba(12, 13, 12, 0.98) 100%);
+  border-width: 1px;
+  border-color: var(--line);
+  box-shadow: var(--shadow);
+}
+
+.board-panel {
+  border-color: var(--board-line);
+}
+
+.output-panel {
+  border-color: var(--output-line);
+}
+
+.quick-copy-panel {
+  border-color: var(--copy-line);
+}
+
+.sheet-manager-panel,
+.edit-panel {
+  border-color: var(--edit-line);
+}
+
+.board-toolbar h2,
+.output-header h2,
+.panel-section h2 {
+  color: #e0b66a;
+}
+
+.grid-controls input,
+.grid-scroller,
+input[type="text"],
+input[type="number"],
+textarea,
+body.theme-steampunk .grid-scroller,
+body.theme-steampunk textarea,
+body.theme-steampunk input[type="text"],
+body.theme-steampunk input[type="number"] {
+  border-color: #5a3919;
+  background: linear-gradient(180deg, #11100e 0%, #090a09 100%);
+  color: var(--text);
+}
+
+.grid-cell,
+body.theme-steampunk .grid-cell {
+  border-color: rgba(180, 123, 50, 0.38);
+  background: rgba(31, 23, 17, 0.72);
+}
+
+#promptGrid .grid-cell.row-alt,
+body.theme-steampunk #promptGrid .grid-cell.row-alt {
+  border-color: rgba(114, 170, 165, 0.28);
+  background: rgba(18, 30, 29, 0.62);
+}
+
+.grid-placeholder-number,
+.prompt-button-number,
+body.theme-steampunk .prompt-button-number,
+body.theme-steampunk .grid-placeholder-number {
+  border-color: rgba(224, 182, 106, 0.34);
+  background: rgba(9, 8, 7, 0.86);
+  color: #d6bd8e;
+}
+
+.prompt-button,
+#promptGrid .prompt-button,
+body.theme-steampunk #promptGrid .prompt-button {
+  border-color: #5a3919;
+  background: linear-gradient(180deg, #2a1d14 0%, #17100c 100%);
+  color: #d5c6b0;
+  box-shadow: inset 0 1px 0 rgba(224, 182, 106, 0.08);
+}
+
+#promptGrid .grid-cell.row-alt .prompt-button:not(.enabled) {
+  border-color: #365a56;
+  background: linear-gradient(180deg, #18302d 0%, #10201f 100%);
+  color: #b4ceca;
+}
+
+#promptGrid .prompt-button.enabled,
+body.theme-steampunk #promptGrid .prompt-button.enabled {
+  border-color: #72aaa5;
+  background: linear-gradient(180deg, #315b57 0%, #193a37 100%);
+  color: #e4f5f2;
+  box-shadow: inset 0 0 0 2px rgba(114, 170, 165, 0.14);
+}
+
+#promptGrid .prompt-button.enabled .prompt-button-number {
+  border-color: rgba(114, 170, 165, 0.5);
+  background: rgba(8, 18, 17, 0.86);
+  color: #b9d8d4;
+}
+
+#copyPromptGrid .prompt-button,
+#copyPromptGrid .prompt-button.enabled,
+body.theme-steampunk #copyPromptGrid .prompt-button,
+body.theme-steampunk #copyPromptGrid .prompt-button.enabled {
+  border-color: #8d602e;
+  background: linear-gradient(180deg, #4a311c 0%, #2a1b11 100%);
+  color: #f0d39b;
+  box-shadow: inset 0 1px 0 rgba(224, 182, 106, 0.12);
+}
+
+.primary-field-label {
+  color: #e0b66a;
+}
+
+.assignment-target,
+.empty-editor,
+.theme-toggle,
+body.theme-steampunk .assignment-target,
+body.theme-steampunk .empty-editor,
+body.theme-steampunk .theme-toggle {
+  border-color: #5a3919;
+  background: rgba(31, 22, 16, 0.88);
+  color: var(--text);
+}
+
+.paste-field {
+  border-color: #8d602e;
+  background: #0c0d0c;
+}
+
+.paste-field:focus {
+  outline-color: rgba(224, 182, 106, 0.3);
+  border-color: #e0b66a;
+}
+
+.danger-button,
+body.theme-steampunk .danger-button {
+  border-color: #7c3828;
+  background: linear-gradient(180deg, #4b2118 0%, #2c1510 100%);
+  color: #ffb49a;
+}
+
+#outputText {
+  background: #090a09;
+  color: #f2ead9;
+}
+
+.toast {
+  border: 1px solid #72502b;
+  background: #0d0b09;
+  color: #f2ead9;
+}
+
+* {
+  scrollbar-color: #72502b #0d0b09;
+}
