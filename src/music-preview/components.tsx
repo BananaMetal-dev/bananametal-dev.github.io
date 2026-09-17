@@ -1,6 +1,6 @@
 import { useDeferredValue, useState, type ReactNode } from "react";
 import type { Language, LocalizedText } from "../data/apps";
-import { isSafeExternalUrl, isYoutubeUrl } from "./data";
+import { isYoutubeUrl } from "./data";
 import type { Availability, KaraokeSongEntry, MusicEntryBase, OriginalSongEntry } from "./types";
 
 const copy = {
@@ -16,7 +16,7 @@ const copy = {
   },
   original: {
     title: { ja: "ORIGINAL SONG COLLECTION", en: "ORIGINAL SONG COLLECTION" },
-    heading: { ja: "あなたのために仕上げられるオリジナル楽曲", en: "Original music ready to be shaped for you" },
+    heading: { ja: "オリジナル曲", en: "Original songs" },
   },
   karaoke: {
     title: { ja: "KARAOKE LIBRARY", en: "KARAOKE LIBRARY" },
@@ -108,31 +108,6 @@ function AvailabilityBadge({ availability, language }: { availability: Availabil
   return <span className={`music-availability is-${availability}`}>{text(language, copy.availability[availability])}</span>;
 }
 
-function MusicTagList({ tags, label }: { tags: string[]; label: string }) {
-  const visibleTags = tags.slice(0, 4);
-  const remaining = tags.length - visibleTags.length;
-  return (
-    <ul className="music-preview-tags" aria-label={label}>
-      {visibleTags.map((tag) => <li key={tag}>{tag}</li>)}
-      {remaining > 0 ? <li>+{remaining}</li> : null}
-    </ul>
-  );
-}
-
-function MusicThumbnail({ song, kind, language }: { song: MusicEntryBase; kind: "original" | "karaoke"; language: Language }) {
-  const [imageFailed, setImageFailed] = useState(false);
-  const canShowImage = isSafeExternalUrl(song.thumbnailUrl) && !imageFailed;
-  if (canShowImage) {
-    return <img className="music-preview-thumbnail-image" src={song.thumbnailUrl} alt={`${song.title} ${language === "ja" ? "サムネイル" : "thumbnail"}`} onError={() => setImageFailed(true)} />;
-  }
-  return (
-    <div className={`music-preview-thumbnail-placeholder is-${kind}`} aria-hidden="true">
-      <span>BANANAMETAL</span>
-      <strong>{kind === "original" ? "ORIGINAL" : "KARAOKE"}</strong>
-    </div>
-  );
-}
-
 function YoutubeLink({ href, children }: { href: string; children: ReactNode }) {
   if (!isYoutubeUrl(href)) return null;
   return <a className="music-preview-button is-secondary" href={href} target="_blank" rel="noopener noreferrer"><span aria-hidden="true">▶</span>{children}</a>;
@@ -140,22 +115,14 @@ function YoutubeLink({ href, children }: { href: string; children: ReactNode }) 
 
 export function OriginalSongCard({ song, language }: { song: OriginalSongEntry; language: Language }) {
   return (
-    <article className="original-song-card">
-      <div className="original-song-media">
-        <MusicThumbnail song={song} kind="original" language={language} />
-        {song.featured ? <span className="music-featured-badge">{text(language, copy.card.featured)}</span> : null}
-      </div>
-      <div className="original-song-content">
-        <div className="music-card-title-row">
-          <div><h3>{song.title}</h3><p className="music-card-artist">{song.artist}</p></div>
-          <AvailabilityBadge availability={song.availability} language={language} />
-        </div>
-        <p className="music-card-style">{song.style}</p>
-        <p className="music-card-description">{song.description}</p>
-        <MusicTagList tags={song.tags} label={`${song.title} tags`} />
-        <div className="music-card-actions">
-          {isYoutubeUrl(song.youtubeVocal) ? <YoutubeLink href={song.youtubeVocal}>{text(language, copy.card.vocal)}</YoutubeLink> : <button className="music-preview-button is-disabled" type="button" disabled>{text(language, copy.card.previewPending)}</button>}
-          <a className="music-preview-button is-primary" href={contactHref(song)}>{text(language, copy.card.contact)}</a>
+    <article className="music-song-card">
+      <div className="music-song-info-line">
+        <span className="music-song-artist">{song.artist}</span>
+        <h3>{song.title}</h3>
+        <AvailabilityBadge availability={song.availability} language={language} />
+        <div className="music-song-actions">
+          {isYoutubeUrl(song.youtubeVocal) ? <YoutubeLink href={song.youtubeVocal}>{language === "ja" ? "視聴" : "Watch"}</YoutubeLink> : <button className="music-preview-button is-disabled" type="button" disabled>{language === "ja" ? "視聴" : "Watch"}</button>}
+          <a className="music-preview-button is-primary" href={contactHref(song)}>{language === "ja" ? <>この曲について<br />相談</> : <>Ask about<br />this track</>}</a>
         </div>
       </div>
     </article>
@@ -169,7 +136,7 @@ export function OriginalSongsSection({ songs, language }: { songs: OriginalSongE
         <span className="music-section-label">{text(language, copy.original.title)}</span>
         <h2 id="original-song-title">{text(language, copy.original.heading)}</h2>
       </div>
-      {songs.length > 0 ? <div className="original-song-grid">{songs.map((song) => <OriginalSongCard key={song.trackId} song={song} language={language} />)}</div> : <MusicEmptyState language={language} />}
+      {songs.length > 0 ? <><MusicSongListHeader language={language} /><div className="music-song-list">{songs.map((song) => <OriginalSongCard key={song.trackId} song={song} language={language} />)}</div></> : <MusicEmptyState language={language} />}
     </section>
   );
 }
@@ -210,18 +177,22 @@ function KaraokeSearchControls({ songs, language, query, artist, style, availabi
 
 function KaraokeSongCard({ song, language }: { song: KaraokeSongEntry; language: Language }) {
   return (
-    <article className="karaoke-song-card">
-      <div className="karaoke-song-info-line">
-        <span className="karaoke-song-artist">{song.originalArtist}</span>
+    <article className="music-song-card">
+      <div className="music-song-info-line">
+        <span className="music-song-artist">{song.originalArtist}</span>
         <h3>{song.title}</h3>
         <AvailabilityBadge availability={song.availability} language={language} />
-        <div className="karaoke-song-actions">
+        <div className="music-song-actions">
           {isYoutubeUrl(song.youtubeUrl) ? <YoutubeLink href={song.youtubeUrl}>{language === "ja" ? <>視聴</> : <>Watch</>}</YoutubeLink> : <button className="music-preview-button is-disabled" type="button" disabled>{language === "ja" ? <>視聴</> : <>Watch</>}</button>}
           <button className="music-preview-button is-disabled" type="button" disabled>{language === "ja" ? <>この曲について<br />相談</> : <>Ask about<br />this track</>}</button>
         </div>
       </div>
     </article>
   );
+}
+
+function MusicSongListHeader({ language }: { language: Language }) {
+  return <div className="music-song-list-header"><span>{text(language, copy.karaoke.artistColumn)}</span><span>{text(language, copy.karaoke.songColumn)}</span></div>;
 }
 
 export function KaraokeLibrarySection({ songs, language }: { songs: KaraokeSongEntry[]; language: Language }) {
@@ -254,7 +225,7 @@ export function KaraokeLibrarySection({ songs, language }: { songs: KaraokeSongE
         <KaraokeSearchControls songs={songs} language={language} query={query} artist={artist} style={style} availability={availability} tag={tag} onQuery={setQuery} onArtist={setArtist} onStyle={setStyle} onAvailability={setAvailability} onTag={setTag} onClear={clear} />
       </div>
       <p className="karaoke-result-count" aria-live="polite">{language === "ja" ? `${filteredSongs.length}${text(language, copy.karaoke.tracksSuffix)}` : `${filteredSongs.length}${text(language, copy.karaoke.tracksSuffix)}`}</p>
-      {songs.length === 0 ? <MusicEmptyState language={language} /> : filteredSongs.length > 0 ? <><div className="karaoke-song-list-header"><span>{text(language, copy.karaoke.artistColumn)}</span><span>{text(language, copy.karaoke.songColumn)}</span></div><div className="karaoke-song-list">{filteredSongs.map((song) => <KaraokeSongCard key={song.trackId} song={song} language={language} />)}</div></> : <div className="music-preview-empty"><p>{text(language, copy.karaoke.noResults)}</p></div>}
+      {songs.length === 0 ? <MusicEmptyState language={language} /> : filteredSongs.length > 0 ? <><MusicSongListHeader language={language} /><div className="music-song-list">{filteredSongs.map((song) => <KaraokeSongCard key={song.trackId} song={song} language={language} />)}</div></> : <div className="music-preview-empty"><p>{text(language, copy.karaoke.noResults)}</p></div>}
     </section>
   );
 }
