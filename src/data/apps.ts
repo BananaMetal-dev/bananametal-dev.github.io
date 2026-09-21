@@ -1,3 +1,4 @@
+import codexMeterPreview from "../assets/apps/codex-meter-preview.png";
 import visualizerPreview from "../assets/apps/visualizer-preview.png";
 import promptManagerPreview from "../assets/apps/prompt-manager-preview.png";
 import bananaKeyChangerPreview from "../assets/apps/banana-key-changer-preview.png";
@@ -16,11 +17,34 @@ export type AppEntry = {
   features: LocalizedText[];
   notes: LocalizedText[];
   url?: string;
+  actionLabel?: LocalizedText;
   previewImage?: string;
   previewAspectRatio?: string;
 };
 
 export const apps: AppEntry[] = [
+  {
+    name: { ja: "Codex Meter", en: "Codex Meter" },
+    status: "available",
+    description: {
+      ja: "Codexの使用量・リセット時刻・リセットチケット期限を確認できる、Windows用ミニアプリです。",
+      en: "A Windows mini app for checking Codex usage, reset times, and reset ticket expiration.",
+    },
+    features: [
+      { ja: "5時間枠・週間枠の残り枠（%）とリセット時刻", en: "5-hour and weekly remaining quota with reset times" },
+      { ja: "リセットチケットの枚数と取得可能な各期限", en: "Reset ticket count and available expiration dates" },
+      { ja: "期限24時間以内のチケットを1回通知", en: "One notification per ticket within 24 hours of expiration" },
+      { ja: "Windowsタスクトレイ常駐・コンパクト表示", en: "Windows system tray with a compact display" },
+    ],
+    notes: [
+      { ja: "Windows 10 / 11 x64・Codex CLIが利用できる環境が必要です", en: "Requires Windows 10 / 11 x64 and an authenticated Codex CLI" },
+      { ja: "署名なしのため、初回起動時にSmartScreenの警告が表示される場合があります", en: "Unsigned: Windows SmartScreen may show a warning on first launch" },
+    ],
+    url: "https://github.com/BananaMetal-dev/Codex-Meter/releases/latest/download/CodexMeter-Setup.exe",
+    actionLabel: { ja: "Windows版をダウンロード", en: "Download for Windows" },
+    previewImage: codexMeterPreview,
+    previewAspectRatio: "4 / 3",
+  },
   {
     name: {
       ja: "Guide Vocal Player",

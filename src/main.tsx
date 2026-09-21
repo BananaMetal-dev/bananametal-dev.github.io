@@ -61,8 +61,8 @@ const localized = {
       en: { title: "Banana Metal | Apps, Music and Creative Tools", description: "A static site that organizes Banana Metal apps, music, and contact routes." },
     },
     apps: {
-      ja: { title: "Apps | Banana Metal", description: "Banana Metal が公開予定のブラウザアプリを一覧で確認できます。" },
-      en: { title: "Apps | Banana Metal", description: "Browse Banana Metal browser apps and their current availability." },
+      ja: { title: "Apps | Banana Metal", description: "Banana MetalのブラウザアプリとWindowsアプリを一覧で確認できます。" },
+      en: { title: "Apps | Banana Metal", description: "Browse Banana Metal browser and Windows apps and their current availability." },
     },
     music: {
       ja: { title: "Music | Banana Metal", description: "Banana Metal の公開用楽曲データと YouTube への外部リンクを掲載しています。" },
@@ -93,7 +93,7 @@ const localized = {
     },
     apps: {
       title: { ja: "Apps", en: "Apps" },
-      lead: { ja: "公開予定のブラウザアプリを一覧で確認できるページです。", en: "A page for browsing published and planned browser apps." },
+      lead: { ja: "公開中・公開予定のアプリを一覧で確認できるページです。", en: "A page for browsing published and planned apps." },
       body: { ja: "各アプリの状態、説明、特徴、利用上の注意をまとめて表示します。", en: "Each card shows status, description, key features, and usage notes." },
     },
     music: {
@@ -423,7 +423,7 @@ function getAppAction(app: AppEntry, language: Language) {
   if (app.status === "available" && app.url) {
     return (
       <a className="button button-primary app-action" href={app.url}>
-        {t(language, localized.appsPage.openApp)}
+        {t(language, app.actionLabel ?? localized.appsPage.openApp)}
       </a>
     );
   }
@@ -438,7 +438,7 @@ function getAppAction(app: AppEntry, language: Language) {
 
   return (
     <button className="button button-disabled app-action" type="button" disabled>
-      {t(language, localized.appsPage.comingSoon)}
+      {t(language, app.actionLabel ?? localized.appsPage.comingSoon)}
     </button>
   );
 }
