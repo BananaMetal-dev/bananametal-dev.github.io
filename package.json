@@ -14,7 +14,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@soundtouchjs/audio-worklet": "^2.1.0",
+    "@soundtouchjs/audio-worklet": "^2.1.1",
     "lucide-react": "^1.41.0",
     "mediabunny": "1.50.8",
     "mpg123-decoder": "^1.0.3",
