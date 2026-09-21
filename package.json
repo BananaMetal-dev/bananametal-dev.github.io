@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest",
     "test:run": "vitest run",
+    "security:privacy": "node scripts/check-public-privacy.mjs --all",
     "test:e2e": "playwright test"
   },
   "dependencies": {

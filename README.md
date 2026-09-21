@@ -192,6 +192,20 @@ GitHub Pages publishes this public repository as an internet-accessible website.
 - personal information
 - production notes or unpublished prompt text
 
+Before the first commit in a new clone, install the repository hooks:
+
+```powershell
+.\scripts\install-git-hooks.ps1
+```
+
+The hooks and CI privacy scan reject personal home-directory paths, personal commit email addresses, private keys, and common credential formats without printing matched values. Run the file scan manually with:
+
+```powershell
+npm run security:privacy
+```
+
+Use the GitHub-provided `@users.noreply.github.com` address for commits. Keep GitHub secret scanning and push protection enabled.
+
 ## Future Automation
 
 Google Sheets automatic synchronization is a separate future phase. The current deployment workflow does not add Google Sheets API, Apps Script, service accounts, GitHub Secrets, scheduled sync, or song catalog automation.
