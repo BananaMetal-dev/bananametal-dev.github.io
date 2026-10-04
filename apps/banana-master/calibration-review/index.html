@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Banana Master | Calibration Review</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; background: #11141b; color: #f2f2f4; }
+    body { max-width: 900px; margin: 0 auto; padding: 28px 18px 80px; }
+    h1 { margin-bottom: 4px; } p { color: #bbc0cf; line-height: 1.6; }
+    section { background: #1b2030; border: 1px solid #333a4e; border-radius: 12px; padding: 20px; margin-top: 18px; }
+    label { display: block; margin: 14px 0 6px; font-weight: 650; }
+    select, textarea, button, input { font: inherit; color: inherit; border: 1px solid #5e6780; border-radius: 7px; background: #222a3a; padding: 9px 12px; }
+    input[type="number"] { width: 8em; }
+    select { max-width: 100%; } textarea { width: calc(100% - 26px); min-height: 80px; }
+    button { cursor: pointer; margin: 5px 6px 5px 0; } button:hover, button:focus-visible { background: #34405a; }
+    button[data-active="true"] { background: #255c4b; border-color: #59c69d; }
+    audio { width: 100%; margin-top: 14px; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .meta { color: #c8cfdd; overflow-wrap: anywhere; }
+    .status { color: #85d8af; } .hint { font-size: .9rem; }
+  </style>
+  <script src="/review.js" defer></script>
+</head>
+<body>
+  <h1>Calibration Review</h1>
+  <p id="dataset" class="status"></p>
+  <p>原音の短い区間を聴き、症状の有無と補正の必要性を別々に判定します。入力はこのPCの作業フォルダーへ保存し、JSON / CSVでも書き出せます。音声はローカルPC内で処理します。試聴用WAVは整数化による歪みを避けるため、必要な場合だけ区間全体を一律減衰します。</p>
+  <section>
+    <div class="row"><label for="item">試聴候補</label><select id="item"></select><span id="progress" class="status"></span></div>
+    <h2 id="filename"></h2><div id="metadata" class="meta"></div>
+    <audio id="audio" controls preload="none"></audio>
+    <div class="row"><button id="play" type="button">再生 / 一時停止</button><button id="back" type="button">−3秒</button><button id="forward" type="button">＋3秒</button><span id="time"></span></div>
+    <details><summary>自動解析の根拠を表示</summary><p id="reason" class="hint"></p></details>
+    <label>症状がある区間（秒）</label><div class="row"><input id="start" type="number" step="0.01" aria-label="開始秒" /><span>〜</span><input id="end" type="number" step="0.01" aria-label="終了秒" /><span class="hint">原音全体の時刻。候補区間内で指定してください。</span></div>
+    <label for="symptom">症状タイプ</label>
+    <select id="symptom">
+      <option value="">未選択</option>
+      <optgroup label="主な症状">
+        <option value="highBandExcess">高音域が強すぎる</option>
+        <option value="hfSmear">高音がにじむ・輪郭がぼやける</option>
+        <option value="metallicRinging">金属的な響きが残る</option>
+        <option value="hfHiss">高音域にサーというノイズがある</option>
+        <option value="mud">低中音がこもる</option>
+        <option value="boom">低音が膨らみすぎる</option>
+        <option value="harshness">耳に刺さる・きつい響き</option>
+        <option value="lowBandPhase">低音の左右が打ち消し合う</option>
+        <option value="sectionDegradation">曲の一部で音質が悪くなる</option>
+      </optgroup>
+      <optgroup label="短い区間の確認候補（異常とは未確定）">
+        <option value="short-hf-burst">一瞬だけ高音が強く出る</option>
+        <option value="short-ringing-candidate">一瞬の金属的な響き</option>
+        <option value="transient-hf-candidate">音の立ち上がりに高音の違和感</option>
+        <option value="section-local-spectral-anomaly">特定の区間だけ音のバランスが変わる</option>
+      </optgroup>
+      <option value="other">その他</option>
+    </select>
+    <label>判定</label><div id="judgments" class="row"><button data-value="Confirmed Symptom" type="button">異常あり</button><button data-value="Benign Musical Content" type="button">音楽的に正常</button><button data-value="Unclear" type="button">判断不能</button><button data-value="Pending" type="button">保留</button></div>
+    <label for="correction">補正の必要性（異常ありの場合も別に判断）</label><select id="correction"><option value="Unknown">未判定</option><option value="Needed">必要</option><option value="Not Needed">不要・意図的な表現</option><option value="Unclear">判断不能</option></select>
+    <label for="notes">メモ・気になる時刻</label><textarea id="notes" placeholder="例: 1:23付近のシンバル"></textarea>
+    <div class="row"><button id="previous" type="button">前の候補</button><button id="next" type="button">次の候補</button></div>
+  </section>
+  <section><h2>判定の保存</h2><p id="save-status" class="status">保存状況を確認中</p><p>JSONには候補ID、原音ハッシュ、区間、判定、補正要否、メモ、校正/検証の区分を含みます。音声PCMは含めません。</p><button id="json" type="button">JSONを書き出す</button><button id="csv" type="button">CSVを書き出す</button></section>
+</body>
+</html>

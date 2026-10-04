@@ -56,6 +56,17 @@ Apps data is managed in `src/data/apps.ts`.
 
 Do not put private app notes, credentials, or unpublished URLs in this file.
 
+## Banana Master (provisional)
+
+The browser app is available at `/apps/banana-master/` from the Apps page.
+It analyzes local stereo WAV/MP3 files, applies provisional corrections when the
+current decision rules permit them, and offers Original/Master listening, a
+24-bit WAV export, and a development Debug JSON export. Audio is processed in
+the browser and is not uploaded. The provisional True Peak ceiling is -1.0 dBTP;
+standards conformance and audible improvement have not been established. The
+listening review's local source files, labels, and reports are not part of the
+public app.
+
 ## Visualizer App
 
 The browser visualizer lives in `public/apps/visualizer/`.

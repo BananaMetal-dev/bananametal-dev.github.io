@@ -8,10 +8,5 @@ export default defineConfig({
     channel: "chrome",
     trace: "retain-on-failure",
   },
-  webServer: {
-    command: "npm run dev -- --host 127.0.0.1 --port 5190",
-    url: "http://127.0.0.1:5190/apps/wav-mp3-converter/",
-    reuseExistingServer: false,
-    timeout: 30_000,
-  },
+  globalSetup: "./tests/e2e/global-setup.ts",
 });

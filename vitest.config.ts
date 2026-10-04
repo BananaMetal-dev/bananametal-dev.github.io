@@ -6,6 +6,8 @@ export default defineConfig({
     include: [
       "src/wav-mp3/**/*.test.ts",
       "src/guide-vocal-player/**/*.test.ts",
+      "src/banana-master/**/*.test.ts",
+      "tests/banana-master/**/*.test.ts",
     ],
     testTimeout: 30_000,
   },

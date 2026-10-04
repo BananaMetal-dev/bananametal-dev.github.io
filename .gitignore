@@ -3,9 +3,11 @@ dist/
 .playwright-cli/
 playwright-report/
 test-results/
+/tests/fixtures/itu-official/
 .env
 .env.*
 *.pem
 *.key
 service-account*.json
 google-key*.json
+/reports/banana-master/

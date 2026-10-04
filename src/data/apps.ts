@@ -70,6 +70,28 @@ export const apps: AppEntry[] = [
   },
   {
     name: {
+      ja: "Banana Master（暫定版）",
+      en: "Banana Master (Provisional)",
+    },
+    status: "available",
+    description: {
+      ja: "WAV・MP3を端末内で解析し、必要と判定した補正を加えて24-bit WAVで保存するブラウザアプリです。",
+      en: "A browser app that analyzes local WAV and MP3 files, applies provisional corrections when indicated, and exports 24-bit WAV.",
+    },
+    features: [
+      { ja: "OriginalとMasterの再生・音量を合わせたA/B比較", en: "Original/Master playback and loudness-matched A/B comparison" },
+      { ja: "音響症状の解析と暫定True Peak上限 −1.0 dBTP", en: "Audio artifact analysis and a provisional -1.0 dBTP True Peak ceiling" },
+      { ja: "24-bit WAVと開発用Debug JSONを書き出し", en: "24-bit WAV and development Debug JSON export" },
+    ],
+    notes: [
+      { ja: "音源は端末内だけで処理されます。ステレオWAV・MP3に対応します", en: "Audio stays on your device. Stereo WAV and MP3 are supported" },
+      { ja: "暫定版です。音質改善と測定器の規格適合性は検証中です", en: "Provisional version: audible improvement and standards conformance remain under review" },
+    ],
+    url: "/apps/banana-master/",
+    previewAspectRatio: "3 / 2",
+  },
+  {
+    name: {
       ja: "WAV ⇄ MP3 バッチ変換",
       en: "WAV ⇄ MP3 Batch Converter",
     },
