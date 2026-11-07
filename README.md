@@ -73,8 +73,9 @@ The browser visualizer lives in `public/apps/visualizer/`.
 
 - It is a static app served by GitHub Pages.
 - Image, audio, and generated video stay in the browser.
-- Phase 1 exports WebM only.
-- MP4 conversion is planned for a later phase and is not included in the current build.
+- Still images and animated GIFs are supported as backgrounds. Animated GIFs loop until the selected duration or the end of the audio.
+- WebM export is available, with optional MP4 generation in supported browsers.
+- The visualizer can be hidden by selecting `なし` / `None`.
 
 ## Banana Key Changer
 

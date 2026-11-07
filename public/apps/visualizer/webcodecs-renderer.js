@@ -79,7 +79,7 @@
           throw createAbortError();
         }
         const timestamp = index * frameDuration;
-        drawFrame(canvas, timestamp, audioBuffer);
+        await drawFrame(canvas, timestamp, audioBuffer);
         await videoSource.add(timestamp, frameDuration);
         onProgress?.({
           ratio: audioBuffer ? 0.1 + (index + 1) / frameCount * 0.9 : (index + 1) / frameCount,

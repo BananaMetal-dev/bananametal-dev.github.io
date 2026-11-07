@@ -15,7 +15,7 @@
     reset: { ja: "リセット", en: "Reset" },
     assets: { ja: "Assets", en: "Assets" },
     localOnly: { ja: "ローカル読み込みのみ", en: "Local files only" },
-    stillImage: { ja: "静止画像", en: "Still Image" },
+    stillImage: { ja: "画像・GIFアニメ", en: "Image / Animated GIF" },
     audioTrack: { ja: "音声トラック", en: "Audio Track" },
     watermarkIcon: { ja: "ウォーターマーク", en: "Watermark Icon" },
     file: { ja: "ファイル", en: "File" },
@@ -67,10 +67,12 @@
     mp4Failed: { ja: "MP4変換に失敗しました。WebMは利用できます。", en: "MP4 conversion failed. The WebM output is still available." },
     supportedFileMissing: { ja: "{source}: 対応する{kind}ファイルが見つかりません", en: "{source}: supported {kind} file not found" },
     importing: { ja: "{name} を読み込み中", en: "Importing {name}" },
-    imageImported: { ja: "静止画像を読み込みました", en: "Still image imported" },
+    imageImported: { ja: "画像を読み込みました", en: "Image imported" },
+    gifUnsupported: { ja: "このブラウザはGIFアニメの読み込みに対応していません。", en: "This browser does not support animated GIF decoding." },
+    gifInvalid: { ja: "GIFアニメのフレームを読み込めませんでした。", en: "The GIF frames could not be decoded." },
     audioImported: { ja: "音声トラックを読み込みました", en: "Audio track imported" },
     watermarkImported: { ja: "ウォーターマークを読み込みました", en: "Watermark icon imported" },
-    imageRequired: { ja: "静止画像は必須です。", en: "Still image is required." },
+    imageRequired: { ja: "画像は必須です。", en: "An image is required." },
     mediaRecorderUnavailable: { ja: "このブラウザでは MediaRecorder を利用できません。", en: "MediaRecorder is not available in this browser." },
     canvasCaptureUnavailable: { ja: "このブラウザではキャンバス録画を利用できません。", en: "Canvas capture is not available in this browser." },
     webCodecsFallback: { ja: "高速書き出しを利用できないため、通常方式へ切り替えます。", en: "Fast rendering is unavailable. Falling back to standard recording." },
@@ -97,7 +99,7 @@
   }
 
   const ACCEPTED_EXTENSIONS = {
-    image: [".png", ".jpg", ".jpeg", ".webp"],
+    image: [".png", ".jpg", ".jpeg", ".webp", ".gif"],
     audio: [".mp3", ".wav", ".ogg", ".m4a"],
     watermark: [".png", ".jpg", ".jpeg", ".webp"]
   };
@@ -132,6 +134,12 @@
 
   const CATALOG = {
     entries: [
+      {
+        id: "none",
+        kind: "visualizer_shape",
+        label: { ja: "なし", en: "None" },
+        defaults: {}
+      },
       {
         id: "vertical_bars",
         kind: "visualizer_shape",
@@ -345,6 +353,9 @@
     },
     audioSettings: readStoredAudioSettings(),
     animationFrame: 0,
+    previewStartedAt: 0,
+    previewElapsed: 0,
+    previewDrawVersion: 0,
     renderFrame: 0,
     isPreviewing: false,
     isRendering: false,
@@ -824,15 +835,32 @@
   async function importAsset(kind, file) {
     setStatus(t("importing", { name: file.name }));
     revokeAsset(kind);
+    try {
+      if (kind === "image") {
+        if (file.name.toLowerCase().endsWith(".gif")) {
+          state.media.image = await loadGif(file);
+        } else {
+          state.urls.image = URL.createObjectURL(file);
+          state.media.image = await loadImage(state.urls.image);
+        }
+      }
+    } catch (error) {
+      revokeAsset(kind);
+      state.assets[kind] = null;
+      updateAssetStates();
+      setStatus(error.message || t("imageRequired"));
+      return;
+    }
     state.assets[kind] = {
       originalName: file.name,
       size: file.size,
       type: file.type
     };
-    state.urls[kind] = URL.createObjectURL(file);
+    if (kind !== "image") {
+      state.urls[kind] = URL.createObjectURL(file);
+    }
 
     if (kind === "image") {
-      state.media.image = await loadImage(state.urls.image);
       state.project.imageTransform = { zoom: 1, offsetX: 0, offsetY: 0 };
       els.imageDrop.open = false;
     } else if (kind === "audio") {
@@ -864,6 +892,10 @@
   }
 
   function revokeAsset(kind) {
+    if (kind === "image" && state.media.image?.isGif) {
+      state.previewDrawVersion += 1;
+      state.media.image.close();
+    }
     if (state.urls[kind]) {
       URL.revokeObjectURL(state.urls[kind]);
       state.urls[kind] = "";
@@ -1193,6 +1225,8 @@
     }
 
     state.isPreviewing = true;
+    state.previewElapsed = state.assets.audio ? els.audioElement.currentTime : 0;
+    state.previewStartedAt = performance.now() - state.previewElapsed * 1000;
     els.playButton.textContent = t("stop");
     startAnimation();
   }
@@ -1202,6 +1236,7 @@
     els.playButton.textContent = t("playPreview");
     els.audioElement.pause();
     stopAnimation();
+    state.previewElapsed = 0;
     drawPreview();
     updatePlaybackText();
   }
@@ -1265,9 +1300,16 @@
 
   function startAnimation() {
     stopAnimation();
-    const tick = () => {
-      drawPreview();
+    const tick = async () => {
+      if (!state.assets.audio) {
+        state.previewElapsed = Math.min(safeDuration(), (performance.now() - state.previewStartedAt) / 1000);
+      }
+      await drawPreview();
       updatePlaybackText();
+      if (!state.assets.audio && state.previewElapsed >= safeDuration()) {
+        stopPreview();
+        return;
+      }
       if (state.isPreviewing) {
         state.animationFrame = window.requestAnimationFrame(tick);
       }
@@ -1456,7 +1498,7 @@
     state.renderCanvas = document.createElement("canvas");
     state.renderCanvas.width = state.project.layout.width;
     state.renderCanvas.height = state.project.layout.height;
-    drawCanvas(state.renderCanvas);
+    await drawCanvas(state.renderCanvas, 0);
 
     const stream = state.renderCanvas.captureStream(state.project.layout.fps);
     const composed = new MediaStream();
@@ -1492,6 +1534,7 @@
 
   function beginRenderUi(mode) {
     stopAnimation();
+    state.previewDrawVersion += 1;
     state.isRendering = true;
     state.isPreviewing = false;
     state.renderMode = mode;
@@ -1562,13 +1605,14 @@
 
   function startBackgroundRender() {
     stopBackgroundRender();
-    const tick = () => {
+    const tick = async () => {
       if (!state.isRendering || !state.renderCanvas) return;
       state.renderElapsed = Math.min(
         state.renderDuration,
         Math.max(0, (performance.now() - state.renderStartedAt) / 1000)
       );
-      drawCanvas(state.renderCanvas);
+      await drawCanvas(state.renderCanvas, state.renderElapsed);
+      if (!state.isRendering) return;
       updateRenderProgress(state.renderDuration > 0 ? state.renderElapsed / state.renderDuration : 0);
       if (state.renderElapsed >= state.renderDuration) {
         stopRender();
@@ -1712,10 +1756,18 @@
   }
 
   function drawPreview() {
-    drawCanvas(els.previewCanvas);
+    const version = ++state.previewDrawVersion;
+    const time = state.assets.audio ? els.audioElement.currentTime : state.previewElapsed;
+    return drawCanvas(els.previewCanvas, time, null, () => version === state.previewDrawVersion)
+      .catch((error) => {
+        if (version === state.previewDrawVersion) setStatus(error.message);
+      });
   }
 
-  function drawCanvas(canvas, renderTime = null, renderAudioBuffer = null) {
+  async function drawCanvas(canvas, renderTime = null, renderAudioBuffer = null, isCurrent = () => true) {
+    const image = state.media.image;
+    const imageFrame = image?.isGif ? await image.frameAt(renderTime || 0) : image;
+    if (!isCurrent()) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
@@ -1729,8 +1781,8 @@
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width, height);
 
-    if (state.media.image) {
-      drawBackground(ctx, state.media.image, width, height);
+    if (image) {
+      drawBackground(ctx, image, width, height, imageFrame);
       ctx.fillStyle = "rgba(0, 0, 0, 0.18)";
       ctx.fillRect(0, 0, width, height);
     } else {
@@ -1744,16 +1796,18 @@
     const base = typeof color.base === "string" ? color.base : "#ffffff";
     const accent = typeof color.accent === "string" ? color.accent : "#ddf6ff";
     const peak = typeof color.peak === "string" ? color.peak : "#ffffff";
-    const values = readVisualizerValues(renderTime, renderAudioBuffer);
-    const bounds = readVisualizerBounds(width, height);
-    drawVisualizer(ctx, values, bounds, accent, peak, base);
+    if (state.project.visualizer.shapeId !== "none") {
+      const values = readVisualizerValues(renderTime, renderAudioBuffer);
+      const bounds = readVisualizerBounds(width, height);
+      drawVisualizer(ctx, values, bounds, accent, peak, base);
+    }
 
     if (state.project.watermark.enabled && state.media.watermark) {
       drawWatermark(ctx, state.media.watermark, width, height);
     }
   }
 
-  function drawBackground(ctx, image, width, height) {
+  function drawBackground(ctx, image, width, height, drawable = image) {
     const transform = clampImageTransform(state.project.imageTransform, image, state.project.layout);
     if (state.project.layout.fitMode === "letterbox") {
       const scale = Math.min(width / image.naturalWidth, height / image.naturalHeight);
@@ -1761,7 +1815,7 @@
       const drawHeight = image.naturalHeight * scale;
       const drawX = (width - drawWidth) / 2;
       const drawY = (height - drawHeight) / 2;
-      ctx.drawImage(image, drawX, drawY, drawWidth, drawHeight);
+      ctx.drawImage(drawable, drawX, drawY, drawWidth, drawHeight);
       return;
     }
 
@@ -1772,7 +1826,7 @@
     const offsetScaleY = height / state.project.layout.height;
     const drawX = (width - drawWidth) / 2 + transform.offsetX * offsetScaleX;
     const drawY = (height - drawHeight) / 2 + transform.offsetY * offsetScaleY;
-    ctx.drawImage(image, drawX, drawY, drawWidth, drawHeight);
+    ctx.drawImage(drawable, drawX, drawY, drawWidth, drawHeight);
   }
 
   function readVisualizerValues(renderTime = null, renderAudioBuffer = null) {
@@ -2430,8 +2484,8 @@
         return;
       }
     }
-    const bounds = readVisualizerHitBounds(rect.width, rect.height);
-    const insideVisualizer = x >= bounds.x && x <= bounds.x + bounds.width && y >= bounds.y && y <= bounds.y + bounds.height;
+    const bounds = state.project.visualizer.shapeId === "none" ? null : readVisualizerHitBounds(rect.width, rect.height);
+    const insideVisualizer = bounds && x >= bounds.x && x <= bounds.x + bounds.width && y >= bounds.y && y <= bounds.y + bounds.height;
     if (insideVisualizer) {
       state.drag = { kind: "visualizer", pointerId: event.pointerId, x: event.clientX, y: event.clientY };
     } else if (state.assets.image) {
@@ -2487,6 +2541,7 @@
   }
 
   function onCanvasKeyDown(event) {
+    if (state.project.visualizer.shapeId === "none") return;
     const step = event.shiftKey ? 24 : 12;
     if (event.key === "ArrowLeft") {
       moveVisualizerBy(-step, 0);
@@ -2590,7 +2645,8 @@
   }
 
   function updatePlaybackText() {
-    const current = Number.isFinite(els.audioElement.currentTime) ? els.audioElement.currentTime : 0;
+    const current = state.assets.audio && Number.isFinite(els.audioElement.currentTime)
+      ? els.audioElement.currentTime : state.previewElapsed;
     const duration = state.project.timeline.mode === "audio_full_length" && Number.isFinite(els.audioElement.duration) ? els.audioElement.duration : state.project.timeline.durationSeconds;
     els.playbackText.textContent = `${formatTime(current)} / ${duration > 0 ? formatTime(duration) : "--:--"}`;
   }
@@ -2674,5 +2730,60 @@
       image.onerror = reject;
       image.src = url;
     });
+  }
+
+  async function loadGif(file) {
+    if (!window.ImageDecoder || !await ImageDecoder.isTypeSupported("image/gif")) {
+      throw new Error(t("gifUnsupported"));
+    }
+    const decoder = new ImageDecoder({ data: await file.arrayBuffer(), type: "image/gif" });
+    try {
+      await decoder.tracks.ready;
+      const frameCount = decoder.tracks.selectedTrack?.frameCount || 0;
+      if (!frameCount) throw new Error(t("gifInvalid"));
+      const ends = [];
+      let duration = 0;
+      let naturalWidth = 0;
+      let naturalHeight = 0;
+      for (let index = 0; index < frameCount; index += 1) {
+        const { image } = await decoder.decode({ frameIndex: index, completeFramesOnly: true });
+        if (index === 0) {
+          naturalWidth = image.displayWidth;
+          naturalHeight = image.displayHeight;
+        }
+        duration += Math.max(0.02, (image.duration || 100000) / 1000000);
+        ends.push(duration);
+        image.close();
+      }
+      let cachedIndex = -1;
+      let cachedFrame = null;
+      let pending = Promise.resolve();
+      return {
+        isGif: true,
+        naturalWidth,
+        naturalHeight,
+        frameAt(time) {
+          const position = ((time % duration) + duration) % duration;
+          const index = ends.findIndex((end) => position < end);
+          pending = pending.then(async () => {
+            if (index !== cachedIndex) {
+              const { image } = await decoder.decode({ frameIndex: index, completeFramesOnly: true });
+              cachedFrame?.close();
+              cachedFrame = image;
+              cachedIndex = index;
+            }
+            return cachedFrame;
+          });
+          return pending;
+        },
+        close() {
+          cachedFrame?.close();
+          decoder.close();
+        }
+      };
+    } catch (error) {
+      decoder.close();
+      throw error;
+    }
   }
 })();
