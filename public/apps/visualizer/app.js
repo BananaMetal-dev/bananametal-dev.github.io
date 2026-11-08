@@ -656,7 +656,7 @@
     });
     els.fpsSelect.addEventListener("change", () => {
       state.project.layout.fps = Number(els.fpsSelect.value);
-      syncFormFromState();
+      updateStatusReadouts();
     });
     els.fitCropButton.addEventListener("click", () => {
       state.project.layout.fitMode = "crop";

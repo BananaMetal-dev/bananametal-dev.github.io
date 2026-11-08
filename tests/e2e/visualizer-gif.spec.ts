@@ -125,3 +125,33 @@ test("offers low frame rates and keeps the selected output duration at 1 fps", a
   expect(duration).toBeGreaterThan(1.45);
   expect(duration).toBeLessThan(1.55);
 });
+
+test("changing frame rate keeps imported media and the preview", async ({ page }) => {
+  await page.goto("/apps/visualizer/index.html");
+  await page.locator("#imageFileInput").setInputFiles(join(process.cwd(), "tests/fixtures/visualizer-still.png"));
+  await page.locator("#audioFileInput").setInputFiles(join(process.cwd(), "tests/fixtures/visualizer-half-second.wav"));
+  await page.locator("#watermarkFileInput").setInputFiles(join(process.cwd(), "tests/fixtures/visualizer-still.png"));
+  for (const kind of ["image", "audio", "watermark"]) {
+    await expect(page.locator(`#${kind}AssetState`)).toHaveText("読み込み済み");
+  }
+  await page.locator("#shapeSelect").selectOption("none");
+  const centerPixel = () => page.locator("#previewCanvas").evaluate((canvas: HTMLCanvasElement) => {
+    const data = canvas.getContext("2d")!.getImageData(canvas.width / 2, canvas.height / 2, 1, 1).data;
+    return Array.from(data).slice(0, 3);
+  });
+  await expect.poll(async () => {
+    const pixel = await centerPixel();
+    return pixel[1] > pixel[0] + 80 && pixel[1] > pixel[2] + 80;
+  }).toBe(true);
+
+  for (const fps of ["1", "5", "10", "20", "30", "60"]) {
+    await page.locator("#fpsSelect").selectOption(fps);
+    await expect(page.locator("#previewReadout")).toContainText(`${fps}fps`);
+    for (const kind of ["image", "audio", "watermark"]) {
+      await expect(page.locator(`#${kind}AssetState`)).toHaveText("読み込み済み");
+    }
+    const pixel = await centerPixel();
+    expect(pixel[1]).toBeGreaterThan(pixel[0] + 80);
+    expect(pixel[1]).toBeGreaterThan(pixel[2] + 80);
+  }
+});
