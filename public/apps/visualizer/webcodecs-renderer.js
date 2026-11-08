@@ -53,7 +53,7 @@
         codec: isMp4 ? "avc" : "vp9",
         bitrate: Math.min(12_000_000, Math.max(2_000_000, width * height * fps * 0.08))
       });
-      output.addVideoTrack(videoSource, { frameRate: fps });
+      output.addVideoTrack(videoSource);
 
       let audioSource = null;
       if (audioBuffer) {
@@ -79,8 +79,9 @@
           throw createAbortError();
         }
         const timestamp = index * frameDuration;
+        const remainingDuration = Math.min(frameDuration, duration - timestamp);
         await drawFrame(canvas, timestamp, audioBuffer);
-        await videoSource.add(timestamp, frameDuration);
+        await videoSource.add(timestamp, remainingDuration);
         onProgress?.({
           ratio: audioBuffer ? 0.1 + (index + 1) / frameCount * 0.9 : (index + 1) / frameCount,
           phase: "video",
@@ -98,7 +99,7 @@
       }
       return {
         blob: new Blob([target.buffer], { type: isMp4 ? "video/mp4" : "video/webm" }),
-        duration: frameCount * frameDuration
+        duration
       };
     } catch (error) {
       if (output && output.state !== "finalized" && output.state !== "canceled") {

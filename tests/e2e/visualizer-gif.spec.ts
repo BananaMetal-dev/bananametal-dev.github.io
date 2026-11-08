@@ -103,3 +103,25 @@ test("loops the GIF until the audio ends", async ({ page }) => {
   expect(result.duration).toBeLessThan(0.6);
   expect(result.pixel[0]).toBeGreaterThan(result.pixel[2] + 80);
 });
+
+test("offers low frame rates and keeps the selected output duration at 1 fps", async ({ page }) => {
+  await page.goto("/apps/visualizer/index.html");
+  await page.locator("#imageFileInput").setInputFiles(join(process.cwd(), "tests/fixtures/visualizer-still.png"));
+  await expect(page.locator("#imageAssetState")).toHaveText("読み込み済み");
+  for (const fps of ["5", "10", "20", "1"]) {
+    await page.locator("#fpsSelect").selectOption(fps);
+    await expect(page.locator("#previewReadout")).toContainText(`${fps}fps`);
+  }
+  await page.locator("#timelineSilentButton").click();
+  await page.locator("#durationInput").fill("1.5");
+  await page.locator("#renderButton").click();
+  await expect(page.locator("#statusText")).toHaveText("書き出しが完了しました", { timeout: 45_000 });
+  const duration = await page.locator("#resultVideo").evaluate(async (video: HTMLVideoElement) => {
+    if (video.readyState < 1) {
+      await new Promise<void>((resolve) => video.addEventListener("loadedmetadata", () => resolve(), { once: true }));
+    }
+    return video.duration;
+  });
+  expect(duration).toBeGreaterThan(1.45);
+  expect(duration).toBeLessThan(1.55);
+});

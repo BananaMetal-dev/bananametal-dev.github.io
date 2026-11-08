@@ -129,6 +129,10 @@ GIFアニメの読み込みにはブラウザのImageDecoder対応が必要で�
 
 フレームレート:
 
+* 1fps
+* 5fps
+* 10fps
+* 20fps
 * 30fps
 * 60fps
 
