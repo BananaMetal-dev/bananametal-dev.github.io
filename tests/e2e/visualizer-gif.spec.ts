@@ -1,6 +1,37 @@
 import { expect, test } from "@playwright/test";
 import { join } from "node:path";
 
+test("adjusts visualizer width and height independently", async ({ page }) => {
+  await page.goto("/apps/visualizer/index.html");
+  await page.locator("#shapeSelect").selectOption("scrolling_spectrogram");
+  const measure = () => page.locator("#previewCanvas").evaluate((canvas: HTMLCanvasElement) => {
+    const ctx = canvas.getContext("2d")!;
+    const countLightPixels = (pixels: Uint8ClampedArray) => {
+      let count = 0;
+      for (let i = 0; i < pixels.length; i += 4) {
+        if (pixels[i] > 220) count++;
+      }
+      return count;
+    };
+    return {
+      width: countLightPixels(ctx.getImageData(0, canvas.height * 0.76, canvas.width, 1).data),
+      height: countLightPixels(ctx.getImageData(canvas.width / 2, 0, 1, canvas.height).data),
+    };
+  });
+
+  const initial = await measure();
+  await page.locator("#visualizerWidthInput").fill("100");
+  const wider = await measure();
+  expect(wider.width).toBeGreaterThan(initial.width);
+  expect(wider.height).toBe(initial.height);
+
+  await page.locator("#visualizerHeightInput").fill("0");
+  const shorter = await measure();
+  expect(shorter.height).toBeLessThan(wider.height);
+  expect(shorter.width).toBe(wider.width);
+  await expect(page.locator("#visualizerHeightValue")).toHaveText("0%");
+});
+
 test("draws the spectrogram over an image while preview audio is muted", async ({ page }) => {
   await page.goto("/apps/visualizer/index.html");
   await page.locator("#imageFileInput").setInputFiles(join(process.cwd(), "tests/fixtures/visualizer-still.png"));
@@ -14,12 +45,12 @@ test("draws the spectrogram over an image while preview audio is muted", async (
   const sample = () => page.locator("#previewCanvas").evaluate((canvas: HTMLCanvasElement) => {
     const ctx = canvas.getContext("2d")!;
     const { width, height } = canvas;
-    return Array.from(ctx.getImageData(width * 0.8, height * 0.39, width * 0.12, height * 0.47).data);
+    return Array.from(ctx.getImageData(width * 0.8, height * 0.7, width * 0.12, height * 0.19).data);
   });
   const before = await sample();
   await page.locator("#playButton").click();
   await expect.poll(async () => (await sample()).some((value, i) =>
-    i % 4 === 0 && value < before[i] - 35
+    i % 4 === 0 && value > before[i] + 35
   )).toBe(true);
 });
 

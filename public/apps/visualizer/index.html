@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Banana Visualizer | Banana Metal</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=2">
 </head>
 <body>
   <main class="app-shell">
@@ -231,11 +231,18 @@
               <span id="barCountValue">120</span>
             </div>
             <label class="field">
-              <span id="visualizerSizeLabel"></span>
-              <input id="visualizerSizeInput" type="range" min="0" max="100" step="1">
+              <span id="visualizerWidthLabel"></span>
+              <input id="visualizerWidthInput" type="range" min="0" max="100" step="1">
             </label>
             <div class="transform-row">
-              <span id="visualizerSizeValue">55%</span>
+              <span id="visualizerWidthValue">55%</span>
+            </div>
+            <label class="field">
+              <span id="visualizerHeightLabel"></span>
+              <input id="visualizerHeightInput" type="range" min="0" max="100" step="1">
+            </label>
+            <div class="transform-row">
+              <span id="visualizerHeightValue">55%</span>
             </div>
           </div>
         </details>
@@ -320,7 +327,7 @@
   <script src="/shared-language.js"></script>
   <script src="mediabunny.js"></script>
   <script src="webcodecs-renderer.js"></script>
-  <script src="app.js"></script>
+  <script src="app.js?v=3"></script>
 </body>
 </html>
 
