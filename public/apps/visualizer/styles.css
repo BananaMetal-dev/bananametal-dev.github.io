@@ -466,41 +466,8 @@ button:disabled {
 
 .field select option {
   background-color: #1d282e;
-  color: #fff;
-  font-weight: 800;
-}
-
-.field select {
-  color: #fff;
-}
-
-@supports (appearance: base-select) and selector(::picker(select)) {
-  .field select,
-  .field select::picker(select) {
-    appearance: base-select;
-  }
-
-  .field select {
-    align-items: center;
-  }
-
-  .field select::picker(select) {
-    background: #1d282e;
-    border: 1px solid #657680;
-    border-radius: 8px;
-    color: #fff;
-  }
-
-  .field select option {
-    padding: 7px 10px;
-  }
-
-  .field select option:checked,
-  .field select option:hover,
-  .field select option:focus-visible {
-    background-color: #345371;
-    color: #fff;
-  }
+  color: #f2f8fc;
+  font-weight: 700;
 }
 
 .field input[type="range"] {

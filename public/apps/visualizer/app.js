@@ -45,8 +45,6 @@
     color: { ja: "Color", en: "Color" },
     barCount: { ja: "バー本数", en: "Bar Count" },
     size: { ja: "サイズ", en: "Size" },
-    visualizerWidth: { ja: "横サイズ", en: "Width" },
-    visualizerHeight: { ja: "縦サイズ", en: "Height" },
     watermark: { ja: "Watermark", en: "Watermark" },
     opacity: { ja: "透明度", en: "Opacity" },
     watermarkDragHint: { ja: "プレビュー上でドラッグして位置を変更", en: "Drag on the preview to move it." },
@@ -254,8 +252,7 @@
     responseLabel: document.getElementById("responseLabel"),
     colorLabel: document.getElementById("colorLabel"),
     barCountLabel: document.getElementById("barCountLabel"),
-    visualizerWidthLabel: document.getElementById("visualizerWidthLabel"),
-    visualizerHeightLabel: document.getElementById("visualizerHeightLabel"),
+    visualizerSizeLabel: document.getElementById("visualizerSizeLabel"),
     watermarkSummary: document.getElementById("watermarkSummary"),
     watermarkHint: document.getElementById("watermarkHint"),
     watermarkToggleLabel: document.getElementById("watermarkToggleLabel"),
@@ -304,10 +301,8 @@
     colorSelect: document.getElementById("colorSelect"),
     barCountInput: document.getElementById("barCountInput"),
     barCountValue: document.getElementById("barCountValue"),
-    visualizerWidthInput: document.getElementById("visualizerWidthInput"),
-    visualizerWidthValue: document.getElementById("visualizerWidthValue"),
-    visualizerHeightInput: document.getElementById("visualizerHeightInput"),
-    visualizerHeightValue: document.getElementById("visualizerHeightValue"),
+    visualizerSizeInput: document.getElementById("visualizerSizeInput"),
+    visualizerSizeValue: document.getElementById("visualizerSizeValue"),
     watermarkEnabledInput: document.getElementById("watermarkEnabledInput"),
     watermarkSizeSelect: document.getElementById("watermarkSizeSelect"),
     watermarkOpacityInput: document.getElementById("watermarkOpacityInput"),
@@ -477,8 +472,7 @@
     els.responseLabel.textContent = t("response");
     els.colorLabel.textContent = t("color");
     els.barCountLabel.textContent = t("barCount");
-    els.visualizerWidthLabel.textContent = t("visualizerWidth");
-    els.visualizerHeightLabel.textContent = t("visualizerHeight");
+    els.visualizerSizeLabel.textContent = t("size");
     els.watermarkSummary.textContent = t("watermark");
     els.watermarkHint.textContent = t("dragHint");
     els.watermarkToggleLabel.textContent = t("watermark");
@@ -537,8 +531,7 @@
         colorId: "white_ice_blue",
         parameters: {
           barCount: 120,
-          visualizerWidth: 55,
-          visualizerHeight: 55,
+          visualizerSize: 55,
           visualizerOffsetX: 0,
           visualizerOffsetY: 0
         }
@@ -713,14 +706,11 @@
       syncFormFromState();
       drawPreview();
     });
-    for (const axis of ["Width", "Height"]) {
-      els[`visualizer${axis}Input`].addEventListener("input", (event) => {
-        const value = Number(event.currentTarget.value);
-        state.project.visualizer.parameters[`visualizer${axis}`] = value;
-        els[`visualizer${axis}Value`].textContent = `${value}%`;
-        drawPreview();
-      });
-    }
+    els.visualizerSizeInput.addEventListener("input", () => {
+      state.project.visualizer.parameters.visualizerSize = clamp(Number(els.visualizerSizeInput.value), 0, 100);
+      syncFormFromState();
+      drawPreview();
+    });
     els.watermarkEnabledInput.addEventListener("change", () => {
       state.project.watermark.enabled = els.watermarkEnabledInput.checked;
       drawPreview();
@@ -1075,11 +1065,8 @@
     els.colorSelect.value = state.project.visualizer.colorId;
     els.barCountInput.value = String(Number(state.project.visualizer.parameters.barCount || 120));
     els.barCountValue.textContent = String(Number(state.project.visualizer.parameters.barCount || 120));
-    for (const axis of ["Width", "Height"]) {
-      const value = visualizerSizePercent(axis);
-      els[`visualizer${axis}Input`].value = String(value);
-      els[`visualizer${axis}Value`].textContent = `${value}%`;
-    }
+    els.visualizerSizeInput.value = String(visualizerSizePercent());
+    els.visualizerSizeValue.textContent = `${Math.round(visualizerSizePercent())}%`;
     els.watermarkEnabledInput.checked = state.project.watermark.enabled;
     els.watermarkEnabledInput.disabled = !state.assets.watermark;
     els.watermarkSizeSelect.value = state.project.watermark.size;
@@ -1227,10 +1214,8 @@
     return clamp(Number.isFinite(state.project.imageTransform.zoom) ? state.project.imageTransform.zoom : 0.3, 0.3, 3);
   }
 
-  function visualizerSizePercent(axis) {
-    const parameters = state.project.visualizer.parameters;
-    const value = Number(parameters[`visualizer${axis}`] ?? parameters.visualizerSize ?? 55);
-    return Number.isFinite(value) ? Math.round(clamp(value, 0, 100)) : 55;
+  function visualizerSizePercent() {
+    return clamp(Number(state.project.visualizer.parameters.visualizerSize || 55), 0, 100);
   }
 
   async function togglePreview() {
@@ -1888,7 +1873,7 @@
     return normalizeVisualizerValues(values);
   }
 
-  function readAudioBufferValues(audioBuffer, timeSeconds, count, peaksOnly = false) {
+  function readAudioBufferValues(audioBuffer, timeSeconds, count) {
     const fftSize = 2048;
     const sampleRate = audioBuffer.sampleRate;
     if (!state.renderAudioAnalysis || state.renderAudioAnalysis.buffer !== audioBuffer) {
@@ -1927,12 +1912,6 @@
     }
 
     fftInPlace(real, imaginary);
-    if (peaksOnly) {
-      const spectrum = Float32Array.from(real.subarray(0, fftSize / 2), (value, bin) =>
-        20 * Math.log10(Math.hypot(value, imaginary[bin]) / (fftSize / 4))
-      );
-      return spectrogramPeaks(spectrum, analysis.edges);
-    }
     const response = getEntry(state.project.visualizer.responseProfileId)?.defaults || {};
     const lowGain = Number(response.lowGain || 1.2);
     const midGain = Number(response.midGain || 1);
@@ -2021,37 +2000,18 @@
     }
   }
 
-  function spectrogramPeaks(spectrum, edges) {
-    const peaks = new Float32Array(edges.length - 1);
-    let strongest = -Infinity;
-    for (let bin = edges[0]; bin < edges[edges.length - 1]; bin++) {
-      strongest = Math.max(strongest, spectrum[bin]);
-    }
-    const floor = Math.max(-72, strongest - 32);
-    for (let band = 0; band < peaks.length; band++) {
-      for (let bin = Math.max(1, edges[band]); bin < Math.min(spectrum.length - 1, edges[band + 1]); bin++) {
-        const level = spectrum[bin];
-        if (level > floor && level > spectrum[bin - 1] && level >= spectrum[bin + 1]) {
-          peaks[band] = Math.max(peaks[band], clamp((level - floor) / 24, 0, 1));
-        }
-      }
-    }
-    return peaks;
-  }
-
   function drawSpectrogram(ctx, bounds, time, audioBuffer, accent) {
     const columns = 120;
     const columnsPerSecond = 30;
     const bands = Math.min(160, Math.max(24, Number(state.project.visualizer.parameters.barCount || 96)));
     const tick = Math.floor(time * columnsPerSecond);
     const source = audioBuffer || state.media.audio;
-    const overImage = Boolean(state.media.image);
     let history = spectrogramHistory.get(ctx.canvas);
-    if (!history || history.source !== source || history.overImage !== overImage || history.image.height !== bands || tick < history.tick) {
+    if (!history || history.source !== source || history.image.height !== bands || tick < history.tick) {
       const image = document.createElement("canvas");
       image.width = columns;
       image.height = bands;
-      history = { image, source, overImage, tick: Math.max(-1, tick - columns) };
+      history = { image, source, tick: Math.max(-1, tick - columns) };
       spectrogramHistory.set(ctx.canvas, history);
     }
     const stripe = history.image.getContext("2d");
@@ -2063,37 +2023,23 @@
       stripe.clearRect(columns - steps, 0, steps, bands);
       for (let column = 0; column < steps; column++) {
         // Live analysis only has the current spectrum; leave missed samples blank.
-        if (!source || (!audioBuffer && (column < steps - 1 || !(state.isPreviewing || state.isRendering)))) continue;
+        if (!audioBuffer && source && (column < steps - 1 || !(state.isPreviewing || state.isRendering))) continue;
         const sampleTime = (tick - steps + column + 1) / columnsPerSecond;
-        const analyser = state.audioGraph.analyser;
-        let values;
-        if (audioBuffer) {
-          values = readAudioBufferValues(audioBuffer, sampleTime, bands, true);
-        } else if (analyser) {
-          const spectrum = new Float32Array(analyser.frequencyBinCount);
-          analyser.getFloatFrequencyData(spectrum);
-          values = spectrogramPeaks(spectrum, buildLogBandEdges(spectrum.length, bands, state.audioGraph.context.sampleRate));
-        } else {
-          continue;
-        }
+        const values = readVisualizerValues(sampleTime, audioBuffer);
         values.forEach((level, band) => {
-          if (!level) return;
-          stripe.fillStyle = overImage ? `rgba(224, 251, 255, ${level})` : `rgba(21, 25, 32, ${level})`;
+          stripe.fillStyle = `rgba(21, 25, 32, ${clamp(level, 0, 1)})`;
           stripe.fillRect(columns - steps + column, bands - 1 - band, 1, 1);
         });
       }
       history.tick = tick;
     }
     const { x, y, width, height } = bounds;
-    ctx.save();
-    ctx.fillStyle = overImage ? "rgba(8, 15, 22, 0.24)" : "#f3f1e9";
+    ctx.fillStyle = state.media.image ? "rgba(243, 241, 233, 0.62)" : "#f3f1e9";
     ctx.fillRect(x, y, width, height);
-    ctx.imageSmoothingEnabled = false;
     ctx.drawImage(history.image, x, y, width, height);
     const playhead = Math.max(1, width / 300);
     ctx.fillStyle = accent;
     ctx.fillRect(x + width - playhead, y, playhead, height);
-    ctx.restore();
   }
 
   function drawVisualizer(ctx, values, bounds, accent, peak, base) {
@@ -2175,15 +2121,15 @@
     const centerX = bounds.x + bounds.width / 2;
     const centerY = bounds.y + bounds.height * 0.5;
     const radialSpan = Math.min(bounds.width, bounds.height);
-    const radius = 0.24;
-    const amplitude = 0.18;
+    const radius = radialSpan * 0.24;
+    const amplitude = radialSpan * 0.18;
     if (isRing) {
       ctx.beginPath();
       radialValues.forEach((value, index) => {
         const angle = (index / radialValues.length) * Math.PI * 2 - Math.PI / 2;
         const r = radius + value * amplitude;
-        const x = centerX + Math.cos(angle) * r * bounds.width;
-        const y = centerY + Math.sin(angle) * r * bounds.height;
+        const x = centerX + Math.cos(angle) * r;
+        const y = centerY + Math.sin(angle) * r;
         if (index === 0) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
       });
@@ -2201,10 +2147,10 @@
       const angle = (index / radialValues.length) * Math.PI * 2 - Math.PI / 2;
       const inner = radius;
       const outer = radius + value * amplitude;
-      const x1 = centerX + Math.cos(angle) * inner * bounds.width;
-      const y1 = centerY + Math.sin(angle) * inner * bounds.height;
-      const x2 = centerX + Math.cos(angle) * outer * bounds.width;
-      const y2 = centerY + Math.sin(angle) * outer * bounds.height;
+      const x1 = centerX + Math.cos(angle) * inner;
+      const y1 = centerY + Math.sin(angle) * inner;
+      const x2 = centerX + Math.cos(angle) * outer;
+      const y2 = centerY + Math.sin(angle) * outer;
       ctx.beginPath();
       ctx.moveTo(x1, y1);
       ctx.lineTo(x2, y2);
@@ -2411,13 +2357,16 @@
       );
       bottom = bounds.y + bounds.height * 0.87;
     } else {
-      const outerRadius = 0.24 + 0.18 * VISUALIZER_SOFT_LIMIT_CEILING;
+      const radialSpan = Math.min(bounds.width, bounds.height);
+      const outerRadius = radialSpan * (
+        0.24 + 0.18 * VISUALIZER_SOFT_LIMIT_CEILING
+      );
       const centerX = bounds.x + bounds.width / 2;
       const centerY = bounds.y + bounds.height / 2;
-      left = centerX - outerRadius * bounds.width;
-      top = centerY - outerRadius * bounds.height;
-      right = centerX + outerRadius * bounds.width;
-      bottom = centerY + outerRadius * bounds.height;
+      left = centerX - outerRadius;
+      top = centerY - outerRadius;
+      right = centerX + outerRadius;
+      bottom = centerY + outerRadius;
     }
 
     return {
@@ -2468,10 +2417,8 @@
     let base;
     let max;
     if (shapeId === "scrolling_spectrogram") {
-      base = { x: width * 0.12, y: height * 0.72, width: width * 0.76, height: height * 0.14 };
-      max = state.media.image
-        ? { x: width * 0.02, y: height * 0.65, width: width * 0.96, height: height * 0.29 }
-        : { x: width * 0.02, y: height * 0.05, width: width * 0.96, height: height * 0.9 };
+      base = { x: width * 0.12, y: height * 0.55, width: width * 0.76, height: height * 0.32 };
+      max = { x: width * 0.02, y: height * 0.05, width: width * 0.96, height: height * 0.9 };
     } else if (shapeId === "line_spectrum" || shapeId === "filled_spectrum") {
       base = { x: width * 0.26, y: height * 0.62, width: width * 0.48, height: height * 0.14 };
       max = { x: width * 0.01, y: height * 0.03, width: width * 0.98, height: height * 0.94 };
@@ -2487,13 +2434,12 @@
       base = { x: width * 0.39, y: height * 0.68, width: width * 0.22, height: height * 0.12 };
       max = { x: width * 0.08, y: height * 0.34, width: width * 0.84, height: height * 0.28 };
     }
-    const widthScale = visualizerSizePercent("Width") / 100;
-    const heightScale = visualizerSizePercent("Height") / 100;
+    const scale = visualizerSizePercent() / 100;
     return {
-      x: lerp(base.x, max.x, widthScale),
-      y: lerp(base.y, max.y, heightScale),
-      width: lerp(base.width, max.width, widthScale),
-      height: lerp(base.height, max.height, heightScale)
+      x: lerp(base.x, max.x, scale),
+      y: lerp(base.y, max.y, scale),
+      width: lerp(base.width, max.width, scale),
+      height: lerp(base.height, max.height, scale)
     };
   }
 
