@@ -465,7 +465,8 @@ button:disabled {
 }
 
 .field select option {
-  color: #13232a;
+  background-color: #1d282e;
+  color: #f2f8fc;
   font-weight: 700;
 }
 

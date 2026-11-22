@@ -1257,8 +1257,7 @@
 
   function applyAudioSettings() {
     const { volume, muted } = state.audioSettings;
-    els.audioElement.volume = volume;
-    els.audioElement.muted = muted;
+    // Keep the signal feeding analysis and recording at full volume.
     if (state.audioGraph.outputGain) {
       state.audioGraph.outputGain.gain.value = muted ? 0 : volume;
     }
@@ -1633,7 +1632,6 @@
     els.renderProgressOverlay.hidden = false;
     els.audioMuteButton.disabled = true;
     els.audioVolumeInput.disabled = true;
-    els.audioElement.muted = true;
     if (state.audioGraph.outputGain) {
       state.audioGraph.outputGain.gain.value = 0;
     }
@@ -2036,7 +2034,7 @@
       history.tick = tick;
     }
     const { x, y, width, height } = bounds;
-    ctx.fillStyle = "#f3f1e9";
+    ctx.fillStyle = state.media.image ? "rgba(243, 241, 233, 0.62)" : "#f3f1e9";
     ctx.fillRect(x, y, width, height);
     ctx.drawImage(history.image, x, y, width, height);
     const playhead = Math.max(1, width / 300);

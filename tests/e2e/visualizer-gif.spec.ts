@@ -1,6 +1,28 @@
 import { expect, test } from "@playwright/test";
 import { join } from "node:path";
 
+test("draws the spectrogram over an image while preview audio is muted", async ({ page }) => {
+  await page.goto("/apps/visualizer/index.html");
+  await page.locator("#imageFileInput").setInputFiles(join(process.cwd(), "tests/fixtures/visualizer-still.png"));
+  await expect(page.locator("#imageAssetState")).toHaveText("読み込み済み");
+  await page.locator("#audioFileInput").setInputFiles(join(process.cwd(), "tests/fixtures/visualizer-rising-tone.wav"));
+  await expect(page.locator("#audioAssetState")).toHaveText("読み込み済み");
+  await page.locator("#shapeSelect").selectOption("scrolling_spectrogram");
+  const mute = page.locator("#audioMuteButton");
+  if (await mute.getAttribute("aria-pressed") !== "true") await mute.click();
+  await expect(mute).toHaveAttribute("aria-pressed", "true");
+  const sample = () => page.locator("#previewCanvas").evaluate((canvas: HTMLCanvasElement) => {
+    const ctx = canvas.getContext("2d")!;
+    const { width, height } = canvas;
+    return Array.from(ctx.getImageData(width * 0.8, height * 0.39, width * 0.12, height * 0.47).data);
+  });
+  const before = await sample();
+  await page.locator("#playButton").click();
+  await expect.poll(async () => (await sample()).some((value, i) =>
+    i % 4 === 0 && value < before[i] - 35
+  )).toBe(true);
+});
+
 test("exports audio alone as WebM and MP4", async ({ page }) => {
   await page.goto("/apps/visualizer/index.html");
   await page.locator("#renderButton").click();
