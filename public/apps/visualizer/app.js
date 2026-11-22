@@ -2027,7 +2027,7 @@
     for (let bin = edges[0]; bin < edges[edges.length - 1]; bin++) {
       strongest = Math.max(strongest, spectrum[bin]);
     }
-    const floor = Math.max(-72, strongest - 32);
+    const floor = Math.max(-68, strongest - 26);
     for (let band = 0; band < peaks.length; band++) {
       for (let bin = Math.max(1, edges[band]); bin < Math.min(spectrum.length - 1, edges[band + 1]); bin++) {
         const level = spectrum[bin];
@@ -2036,7 +2036,10 @@
         }
       }
     }
-    return peaks;
+    return Array.from(peaks, (level, band) => ({ level, band }))
+      .filter(({ level }) => level >= 0.18)
+      .sort((a, b) => b.level - a.level)
+      .slice(0, 8);
   }
 
   function drawSpectrogram(ctx, bounds, time, audioBuffer, accent) {
@@ -2047,24 +2050,17 @@
     const source = audioBuffer || state.media.audio;
     const overImage = Boolean(state.media.image);
     let history = spectrogramHistory.get(ctx.canvas);
-    if (!history || history.source !== source || history.overImage !== overImage || history.image.height !== bands || tick < history.tick) {
-      const image = document.createElement("canvas");
-      image.width = columns;
-      image.height = bands;
-      history = { image, source, overImage, tick: Math.max(-1, tick - columns) };
+    if (!history || history.source !== source || history.bands !== bands || tick < history.tick) {
+      history = { samples: [], source, bands, tick: Math.max(-1, tick - columns) };
       spectrogramHistory.set(ctx.canvas, history);
     }
-    const stripe = history.image.getContext("2d");
     const steps = Math.min(columns, tick - history.tick);
     if (steps > 0) {
-      stripe.globalCompositeOperation = "copy";
-      stripe.drawImage(history.image, -steps, 0);
-      stripe.globalCompositeOperation = "source-over";
-      stripe.clearRect(columns - steps, 0, steps, bands);
       for (let column = 0; column < steps; column++) {
         // Live analysis only has the current spectrum; leave missed samples blank.
         if (!source || (!audioBuffer && (column < steps - 1 || !(state.isPreviewing || state.isRendering)))) continue;
-        const sampleTime = (tick - steps + column + 1) / columnsPerSecond;
+        const sampleTick = tick - steps + column + 1;
+        const sampleTime = sampleTick / columnsPerSecond;
         const analyser = state.audioGraph.analyser;
         let values;
         if (audioBuffer) {
@@ -2076,23 +2072,66 @@
         } else {
           continue;
         }
-        values.forEach((level, band) => {
-          if (!level) return;
-          stripe.fillStyle = overImage ? `rgba(224, 251, 255, ${level})` : `rgba(21, 25, 32, ${level})`;
-          stripe.fillRect(columns - steps + column, bands - 1 - band, 1, 1);
+        const previous = history.samples.at(-1);
+        const candidates = previous && sampleTick - previous.tick <= 3 ? [...previous.peaks] : [];
+        const peaks = values.map(peak => {
+          let closest = -1;
+          let distance = Math.max(2, bands * 0.05);
+          for (let i = 0; i < candidates.length; i++) {
+            const gap = Math.abs(candidates[i].band - peak.band);
+            if (gap < distance) {
+              closest = i;
+              distance = gap;
+            }
+          }
+          if (closest === -1) return peak;
+          const [match] = candidates.splice(closest, 1);
+          return { ...peak, fromBand: match.band, fromTick: previous.tick };
         });
+        history.samples.push({ tick: sampleTick, peaks });
       }
+      history.samples = history.samples.filter(sample => sample.tick > tick - columns);
       history.tick = tick;
     }
     const { x, y, width, height } = bounds;
     ctx.save();
-    ctx.fillStyle = overImage ? "rgba(8, 15, 22, 0.24)" : "#f3f1e9";
-    ctx.fillRect(x, y, width, height);
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(history.image, x, y, width, height);
-    const playhead = Math.max(1, width / 300);
-    ctx.fillStyle = accent;
-    ctx.fillRect(x + width - playhead, y, playhead, height);
+    if (!overImage) {
+      ctx.fillStyle = "#f3f1e9";
+      ctx.fillRect(x, y, width, height);
+    }
+    ctx.beginPath();
+    ctx.rect(x, y, width, height);
+    ctx.clip();
+    const paths = Array.from({ length: 5 }, () => new Path2D());
+    const columnWidth = width / columns;
+    const bandY = band => y + height * (0.95 - 0.9 * (band + 0.5) / bands);
+    for (const sample of history.samples) {
+      const age = tick - sample.tick;
+      const endX = x + width - (age + 0.5) * columnWidth;
+      const fade = Math.sqrt(1 - age / columns);
+      for (const peak of sample.peaks) {
+        const strength = peak.level * fade;
+        if (strength < 0.12) continue;
+        const path = paths[Math.min(paths.length - 1, Math.floor(strength * paths.length))];
+        const endY = bandY(peak.band);
+        const startX = peak.fromTick === undefined
+          ? endX - columnWidth * 0.25
+          : endX - (sample.tick - peak.fromTick) * columnWidth;
+        path.moveTo(startX, bandY(peak.fromBand ?? peak.band));
+        path.lineTo(endX, endY);
+      }
+    }
+    ctx.lineCap = "round";
+    ctx.lineWidth = clamp(ctx.canvas.width / 680, 0.9, 4);
+    ctx.strokeStyle = overImage ? accent : "#253846";
+    if (overImage) {
+      ctx.shadowColor = "rgba(0, 0, 0, 0.85)";
+      ctx.shadowBlur = ctx.lineWidth * 2.5;
+    }
+    paths.forEach((path, index) => {
+      ctx.globalAlpha = (index + 1) / paths.length * 0.9;
+      ctx.stroke(path);
+    });
     ctx.restore();
   }
 
