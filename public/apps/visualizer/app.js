@@ -73,6 +73,7 @@
     audioImported: { ja: "音声トラックを読み込みました", en: "Audio track imported" },
     watermarkImported: { ja: "ウォーターマークを読み込みました", en: "Watermark icon imported" },
     imageRequired: { ja: "画像は必須です。", en: "An image is required." },
+    mediaRequired: { ja: "画像または音声を読み込んでください。", en: "Load an image or audio file." },
     mediaRecorderUnavailable: { ja: "このブラウザでは MediaRecorder を利用できません。", en: "MediaRecorder is not available in this browser." },
     canvasCaptureUnavailable: { ja: "このブラウザではキャンバス録画を利用できません。", en: "Canvas capture is not available in this browser." },
     webCodecsFallback: { ja: "高速書き出しを利用できないため、通常方式へ切り替えます。", en: "Fast rendering is unavailable. Falling back to standard recording." },
@@ -134,6 +135,12 @@
 
   const CATALOG = {
     entries: [
+      {
+        id: "scrolling_spectrogram",
+        kind: "visualizer_shape",
+        label: { ja: "流れるスペクトログラム", en: "Scrolling Spectrogram" },
+        defaults: { barCount: 96 }
+      },
       {
         id: "none",
         kind: "visualizer_shape",
@@ -374,6 +381,7 @@
     resultMeta: t("noOutput")
   };
 
+  const spectrogramHistory = new WeakMap();
   init();
 
   function init() {
@@ -1351,8 +1359,8 @@
 
   async function renderProject() {
     if (state.isRendering) return;
-    if (!state.assets.image) {
-      setStatus(t("imageRequired"));
+    if (!state.assets.image && !state.assets.audio) {
+      setStatus(t("mediaRequired"));
       return;
     }
     const speed = selectedRenderSpeed();
@@ -1474,10 +1482,6 @@
 
   async function renderProjectWithMediaRecorder() {
     if (state.isRendering) return;
-    if (!state.assets.image) {
-      setStatus(t("imageRequired"));
-      return;
-    }
     if (!window.MediaRecorder) {
       setStatus(t("mediaRecorderUnavailable"));
       return;
@@ -1785,7 +1789,7 @@
       drawBackground(ctx, image, width, height, imageFrame);
       ctx.fillStyle = "rgba(0, 0, 0, 0.18)";
       ctx.fillRect(0, 0, width, height);
-    } else {
+    } else if (!state.assets.audio) {
       ctx.fillStyle = "rgba(238, 244, 247, 0.86)";
       ctx.font = `${Math.max(14, width * 0.012)}px sans-serif`;
       ctx.textAlign = "center";
@@ -1796,7 +1800,9 @@
     const base = typeof color.base === "string" ? color.base : "#ffffff";
     const accent = typeof color.accent === "string" ? color.accent : "#ddf6ff";
     const peak = typeof color.peak === "string" ? color.peak : "#ffffff";
-    if (state.project.visualizer.shapeId !== "none") {
+    if (state.project.visualizer.shapeId === "scrolling_spectrogram") {
+      drawSpectrogram(ctx, readVisualizerBounds(width, height), renderTime || 0, renderAudioBuffer, accent);
+    } else if (state.project.visualizer.shapeId !== "none") {
       const values = readVisualizerValues(renderTime, renderAudioBuffer);
       const bounds = readVisualizerBounds(width, height);
       drawVisualizer(ctx, values, bounds, accent, peak, base);
@@ -1994,6 +2000,48 @@
         }
       }
     }
+  }
+
+  function drawSpectrogram(ctx, bounds, time, audioBuffer, accent) {
+    const columns = 120;
+    const columnsPerSecond = 30;
+    const bands = Math.min(160, Math.max(24, Number(state.project.visualizer.parameters.barCount || 96)));
+    const tick = Math.floor(time * columnsPerSecond);
+    const source = audioBuffer || state.media.audio;
+    let history = spectrogramHistory.get(ctx.canvas);
+    if (!history || history.source !== source || history.image.height !== bands || tick < history.tick) {
+      const image = document.createElement("canvas");
+      image.width = columns;
+      image.height = bands;
+      history = { image, source, tick: Math.max(-1, tick - columns) };
+      spectrogramHistory.set(ctx.canvas, history);
+    }
+    const stripe = history.image.getContext("2d");
+    const steps = Math.min(columns, tick - history.tick);
+    if (steps > 0) {
+      stripe.globalCompositeOperation = "copy";
+      stripe.drawImage(history.image, -steps, 0);
+      stripe.globalCompositeOperation = "source-over";
+      stripe.clearRect(columns - steps, 0, steps, bands);
+      for (let column = 0; column < steps; column++) {
+        // Live analysis only has the current spectrum; leave missed samples blank.
+        if (!audioBuffer && source && (column < steps - 1 || !(state.isPreviewing || state.isRendering))) continue;
+        const sampleTime = (tick - steps + column + 1) / columnsPerSecond;
+        const values = readVisualizerValues(sampleTime, audioBuffer);
+        values.forEach((level, band) => {
+          stripe.fillStyle = `rgba(21, 25, 32, ${clamp(level, 0, 1)})`;
+          stripe.fillRect(columns - steps + column, bands - 1 - band, 1, 1);
+        });
+      }
+      history.tick = tick;
+    }
+    const { x, y, width, height } = bounds;
+    ctx.fillStyle = "#f3f1e9";
+    ctx.fillRect(x, y, width, height);
+    ctx.drawImage(history.image, x, y, width, height);
+    const playhead = Math.max(1, width / 300);
+    ctx.fillStyle = accent;
+    ctx.fillRect(x + width - playhead, y, playhead, height);
   }
 
   function drawVisualizer(ctx, values, bounds, accent, peak, base) {
@@ -2282,6 +2330,7 @@
 
   function visualizerPaintBounds(bounds) {
     const shapeId = state.project.visualizer.shapeId;
+    if (shapeId === "scrolling_spectrogram") return bounds;
     const count = Math.min(160, Math.max(24, Number(state.project.visualizer.parameters.barCount || 96)));
     let left;
     let top;
@@ -2369,7 +2418,10 @@
     const shapeId = state.project.visualizer.shapeId;
     let base;
     let max;
-    if (shapeId === "line_spectrum" || shapeId === "filled_spectrum") {
+    if (shapeId === "scrolling_spectrogram") {
+      base = { x: width * 0.12, y: height * 0.55, width: width * 0.76, height: height * 0.32 };
+      max = { x: width * 0.02, y: height * 0.05, width: width * 0.96, height: height * 0.9 };
+    } else if (shapeId === "line_spectrum" || shapeId === "filled_spectrum") {
       base = { x: width * 0.26, y: height * 0.62, width: width * 0.48, height: height * 0.14 };
       max = { x: width * 0.01, y: height * 0.03, width: width * 0.98, height: height * 0.94 };
     } else if (shapeId === "vertical_bars" || shapeId === "led_bars") {

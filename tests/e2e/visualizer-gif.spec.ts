@@ -1,6 +1,43 @@
 import { expect, test } from "@playwright/test";
 import { join } from "node:path";
 
+test("exports audio alone as WebM and MP4", async ({ page }) => {
+  await page.goto("/apps/visualizer/index.html");
+  await page.locator("#renderButton").click();
+  await expect(page.locator("#statusText")).toHaveText("画像または音声を読み込んでください。");
+  await page.locator("#audioFileInput").setInputFiles(join(process.cwd(), "tests/fixtures/visualizer-rising-tone.wav"));
+  await expect(page.locator("#audioAssetState")).toHaveText("読み込み済み");
+  await page.locator("#shapeSelect").selectOption("scrolling_spectrogram");
+  const preview = page.locator("#previewCanvas");
+  const panelPixel = await preview.evaluate((canvas: HTMLCanvasElement) =>
+    Array.from(canvas.getContext("2d")!.getImageData(canvas.width / 2, canvas.height * 0.7, 1, 1).data)
+  );
+  expect(panelPixel.slice(0, 3)).toEqual([243, 241, 233]);
+  await page.locator("#renderButton").click();
+  await expect(page.locator("#statusText")).toHaveText("書き出しが完了しました");
+  const hasFrequencyTrace = await page.locator("#resultVideo").evaluate(async (video: HTMLVideoElement) => {
+    if (video.readyState < 1) await new Promise<void>(resolve => video.addEventListener("loadedmetadata", () => resolve(), { once: true }));
+    const seeked = new Promise<void>(resolve => video.addEventListener("seeked", () => resolve(), { once: true }));
+    video.currentTime = 0.4;
+    await seeked;
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d")!;
+    ctx.drawImage(video, 0, 0);
+    const pixels = ctx.getImageData(0, canvas.height * 0.7, canvas.width, 1).data;
+    const paper = Array.from({ length: canvas.width }, (_, x) => pixels[x * 4] > 225);
+    const right = paper.lastIndexOf(true);
+    const top = ctx.getImageData(right - 8, 0, 1, canvas.height).data;
+    // Look inside the panel, excluding the transition into the dark background.
+    const column = Array.from({ length: canvas.height }, (_, y) => top[y * 4]);
+    return column.slice(column.findIndex(v => v > 225) + 3, column.findLastIndex(v => v > 225) - 2).some(v => v < 195);
+  });
+  expect(hasFrequencyTrace).toBe(true);
+  await page.locator("#mp4Button").click();
+  await expect(page.locator("#mp4DownloadLink")).toHaveAttribute("href", /^blob:/);
+});
+
 test("loops an animated GIF through WebM export and hides the visualizer", async ({ page }) => {
   await page.goto("/apps/visualizer/index.html");
   await page.locator("#imageFileInput").setInputFiles(join(process.cwd(), "tests/fixtures/visualizer-loop.gif"));
