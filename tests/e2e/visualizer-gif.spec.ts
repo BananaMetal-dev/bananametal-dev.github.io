@@ -1,5 +1,22 @@
 import { expect, test } from "@playwright/test";
+import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+
+test("imports a mixed batch into the shared asset area and shows its file names", async ({ page }) => {
+  await page.goto("/apps/visualizer/index.html");
+  const before = await page.locator("#assetDrop").boundingBox();
+  const fixtures = join(process.cwd(), "tests/fixtures");
+  const png = await readFile(join(fixtures, "visualizer-still.png"));
+  await page.locator("#assetFileInput").setInputFiles([
+    { name: "music.WAV", mimeType: "audio/wav", buffer: await readFile(join(fixtures, "visualizer-half-second.wav")) },
+    { name: "cover.PNG", mimeType: "image/png", buffer: png },
+    { name: "studio-logo.PNG", mimeType: "image/png", buffer: png },
+  ]);
+  await expect(page.locator("#imageAssetState")).toHaveText("cover.PNG");
+  await expect(page.locator("#audioAssetState")).toHaveText("music.WAV");
+  await expect(page.locator("#watermarkAssetState")).toHaveText("studio-logo.PNG");
+  expect((await page.locator("#assetDrop").boundingBox())?.height).toBe(before?.height);
+});
 
 test("adjusts visualizer width and height independently", async ({ page }) => {
   await page.goto("/apps/visualizer/index.html");
@@ -34,10 +51,10 @@ test("adjusts visualizer width and height independently", async ({ page }) => {
 
 test("draws the spectrogram over an image while preview audio is muted", async ({ page }) => {
   await page.goto("/apps/visualizer/index.html");
-  await page.locator("#imageFileInput").setInputFiles(join(process.cwd(), "tests/fixtures/visualizer-still.png"));
-  await expect(page.locator("#imageAssetState")).toHaveText("読み込み済み");
-  await page.locator("#audioFileInput").setInputFiles(join(process.cwd(), "tests/fixtures/visualizer-rising-tone.wav"));
-  await expect(page.locator("#audioAssetState")).toHaveText("読み込み済み");
+  await page.locator("#assetFileInput").setInputFiles(join(process.cwd(), "tests/fixtures/visualizer-still.png"));
+  await expect(page.locator("#imageAssetState")).toHaveText("visualizer-still.png");
+  await page.locator("#assetFileInput").setInputFiles(join(process.cwd(), "tests/fixtures/visualizer-rising-tone.wav"));
+  await expect(page.locator("#audioAssetState")).toHaveText("visualizer-rising-tone.wav");
   await page.locator("#shapeSelect").selectOption("scrolling_spectrogram");
   const mute = page.locator("#audioMuteButton");
   if (await mute.getAttribute("aria-pressed") !== "true") await mute.click();
@@ -58,8 +75,8 @@ test("exports audio alone as WebM and MP4", async ({ page }) => {
   await page.goto("/apps/visualizer/index.html");
   await page.locator("#renderButton").click();
   await expect(page.locator("#statusText")).toHaveText("画像または音声を読み込んでください。");
-  await page.locator("#audioFileInput").setInputFiles(join(process.cwd(), "tests/fixtures/visualizer-rising-tone.wav"));
-  await expect(page.locator("#audioAssetState")).toHaveText("読み込み済み");
+  await page.locator("#assetFileInput").setInputFiles(join(process.cwd(), "tests/fixtures/visualizer-rising-tone.wav"));
+  await expect(page.locator("#audioAssetState")).toHaveText("visualizer-rising-tone.wav");
   await page.locator("#shapeSelect").selectOption("scrolling_spectrogram");
   const preview = page.locator("#previewCanvas");
   const panelPixel = await preview.evaluate((canvas: HTMLCanvasElement) =>
@@ -93,8 +110,8 @@ test("exports audio alone as WebM and MP4", async ({ page }) => {
 
 test("loops an animated GIF through WebM export and hides the visualizer", async ({ page }) => {
   await page.goto("/apps/visualizer/index.html");
-  await page.locator("#imageFileInput").setInputFiles(join(process.cwd(), "tests/fixtures/visualizer-loop.gif"));
-  await expect(page.locator("#imageAssetState")).toHaveText("読み込み済み");
+  await page.locator("#assetFileInput").setInputFiles(join(process.cwd(), "tests/fixtures/visualizer-loop.gif"));
+  await expect(page.locator("#imageAssetState")).toHaveText("visualizer-loop.gif");
   await page.locator("#shapeSelect").selectOption("none");
   await expect(page.locator("#shapeSelect")).toHaveValue("none");
   await page.locator("#timelineSilentButton").click();
@@ -151,8 +168,8 @@ test("loops an animated GIF through WebM export and hides the visualizer", async
 
 test("still images continue to load after animated GIF support is added", async ({ page }) => {
   await page.goto("/apps/visualizer/index.html");
-  await page.locator("#imageFileInput").setInputFiles(join(process.cwd(), "tests/fixtures/visualizer-still.png"));
-  await expect(page.locator("#imageAssetState")).toHaveText("読み込み済み");
+  await page.locator("#assetFileInput").setInputFiles(join(process.cwd(), "tests/fixtures/visualizer-still.png"));
+  await expect(page.locator("#imageAssetState")).toHaveText("visualizer-still.png");
   await page.locator("#shapeSelect").selectOption("none");
   await expect.poll(() => page.locator("#previewCanvas").evaluate((canvas: HTMLCanvasElement) => {
     const context = canvas.getContext("2d")!;
@@ -165,10 +182,10 @@ test("still images continue to load after animated GIF support is added", async 
 
 test("loops the GIF until the audio ends", async ({ page }) => {
   await page.goto("/apps/visualizer/index.html");
-  await page.locator("#imageFileInput").setInputFiles(join(process.cwd(), "tests/fixtures/visualizer-loop.gif"));
-  await expect(page.locator("#imageAssetState")).toHaveText("読み込み済み");
-  await page.locator("#audioFileInput").setInputFiles(join(process.cwd(), "tests/fixtures/visualizer-half-second.wav"));
-  await expect(page.locator("#audioAssetState")).toHaveText("読み込み済み");
+  await page.locator("#assetFileInput").setInputFiles(join(process.cwd(), "tests/fixtures/visualizer-loop.gif"));
+  await expect(page.locator("#imageAssetState")).toHaveText("visualizer-loop.gif");
+  await page.locator("#assetFileInput").setInputFiles(join(process.cwd(), "tests/fixtures/visualizer-half-second.wav"));
+  await expect(page.locator("#audioAssetState")).toHaveText("visualizer-half-second.wav");
   await page.locator("#shapeSelect").selectOption("none");
   await page.locator("#fpsSelect").selectOption("30");
   await page.locator("#renderButton").click();
@@ -196,8 +213,8 @@ test("loops the GIF until the audio ends", async ({ page }) => {
 
 test("offers low frame rates and keeps the selected output duration at 1 fps", async ({ page }) => {
   await page.goto("/apps/visualizer/index.html");
-  await page.locator("#imageFileInput").setInputFiles(join(process.cwd(), "tests/fixtures/visualizer-still.png"));
-  await expect(page.locator("#imageAssetState")).toHaveText("読み込み済み");
+  await page.locator("#assetFileInput").setInputFiles(join(process.cwd(), "tests/fixtures/visualizer-still.png"));
+  await expect(page.locator("#imageAssetState")).toHaveText("visualizer-still.png");
   for (const fps of ["5", "10", "20", "1"]) {
     await page.locator("#fpsSelect").selectOption(fps);
     await expect(page.locator("#previewReadout")).toContainText(`${fps}fps`);
@@ -218,11 +235,12 @@ test("offers low frame rates and keeps the selected output duration at 1 fps", a
 
 test("changing frame rate keeps imported media and the preview", async ({ page }) => {
   await page.goto("/apps/visualizer/index.html");
-  await page.locator("#imageFileInput").setInputFiles(join(process.cwd(), "tests/fixtures/visualizer-still.png"));
-  await page.locator("#audioFileInput").setInputFiles(join(process.cwd(), "tests/fixtures/visualizer-half-second.wav"));
-  await page.locator("#watermarkFileInput").setInputFiles(join(process.cwd(), "tests/fixtures/visualizer-still.png"));
+  await page.locator("#assetFileInput").setInputFiles(join(process.cwd(), "tests/fixtures/visualizer-still.png"));
+  await page.locator("#assetFileInput").setInputFiles(join(process.cwd(), "tests/fixtures/visualizer-half-second.wav"));
+  await page.locator("#assetAsWatermark").check();
+  await page.locator("#assetFileInput").setInputFiles(join(process.cwd(), "tests/fixtures/visualizer-still.png"));
   for (const kind of ["image", "audio", "watermark"]) {
-    await expect(page.locator(`#${kind}AssetState`)).toHaveText("読み込み済み");
+    await expect(page.locator(`#${kind}AssetState`)).toHaveText(kind === "audio" ? "visualizer-half-second.wav" : "visualizer-still.png");
   }
   await page.locator("#shapeSelect").selectOption("none");
   const centerPixel = () => page.locator("#previewCanvas").evaluate((canvas: HTMLCanvasElement) => {
@@ -238,7 +256,7 @@ test("changing frame rate keeps imported media and the preview", async ({ page }
     await page.locator("#fpsSelect").selectOption(fps);
     await expect(page.locator("#previewReadout")).toContainText(`${fps}fps`);
     for (const kind of ["image", "audio", "watermark"]) {
-      await expect(page.locator(`#${kind}AssetState`)).toHaveText("読み込み済み");
+      await expect(page.locator(`#${kind}AssetState`)).toHaveText(kind === "audio" ? "visualizer-half-second.wav" : "visualizer-still.png");
     }
     const pixel = await centerPixel();
     expect(pixel[1]).toBeGreaterThan(pixel[0] + 80);

@@ -300,6 +300,11 @@ button:disabled {
 }
 
 .asset-group {
+  display: flex;
+  flex-direction: column;
+  min-height: 294px;
+  padding: 10px;
+  gap: 8px;
   margin: 0 0 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -327,13 +332,24 @@ button:disabled {
   grid-template-columns: 32px minmax(0, 1fr);
   gap: 10px;
   align-items: center;
-  padding: 10px;
-  cursor: pointer;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+}
+
+.asset-list {
+  flex: 1;
+  display: grid;
+  grid-template-rows: repeat(3, 1fr);
+  margin: 0;
+  padding: 0;
   list-style: none;
 }
 
-.asset-summary::-webkit-details-marker {
-  display: none;
+.asset-watermark-mode {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
 }
 
 .asset-icon {
@@ -367,12 +383,9 @@ button:disabled {
 .asset-copy small.is-loaded {
   color: #d7ffdd;
   font-weight: 800;
-}
-
-.asset-body {
-  display: grid;
-  gap: 6px;
-  padding: 0 10px 10px 54px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .asset-actions {

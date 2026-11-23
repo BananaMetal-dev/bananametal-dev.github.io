@@ -49,59 +49,41 @@
           <span id="assetsHeadingNote" class="heading-note"></span>
         </div>
 
-        <details id="imageDrop" class="asset-group" open>
-          <summary class="asset-summary" aria-label="Still image asset">
-            <div class="asset-icon">IMG</div>
-            <div class="asset-copy">
-              <strong id="imageAssetLabel"></strong>
-              <small id="imageAssetState">Not loaded</small>
-            </div>
-          </summary>
-          <div class="asset-body">
-            <div class="asset-actions">
-              <button id="imageFileButton" type="button"></button>
-              <button id="imageFolderButton" type="button"></button>
-            </div>
-            <input id="imageFileInput" type="file" accept=".png,.jpg,.jpeg,.webp,.gif,image/png,image/jpeg,image/webp,image/gif" hidden>
-            <input id="imageFolderInput" type="file" accept=".png,.jpg,.jpeg,.webp,.gif,image/png,image/jpeg,image/webp,image/gif" webkitdirectory directory multiple hidden>
+        <section id="assetDrop" class="asset-group" aria-labelledby="assetsHeading">
+          <div class="asset-actions">
+            <button id="assetFileButton" type="button"></button>
+            <button id="assetFolderButton" type="button"></button>
           </div>
-        </details>
-
-        <details id="audioDrop" class="asset-group" open>
-          <summary class="asset-summary" aria-label="Audio track asset">
-            <div class="asset-icon">AUD</div>
-            <div class="asset-copy">
-              <strong id="audioAssetLabel"></strong>
-              <small id="audioAssetState">Not loaded</small>
-            </div>
-          </summary>
-          <div class="asset-body">
-            <div class="asset-actions">
-              <button id="audioFileButton" type="button"></button>
-              <button id="audioFolderButton" type="button"></button>
-            </div>
-            <input id="audioFileInput" type="file" accept=".mp3,.wav,.ogg,.m4a,audio/*" hidden>
-            <input id="audioFolderInput" type="file" accept=".mp3,.wav,.ogg,.m4a,audio/*" webkitdirectory directory multiple hidden>
-          </div>
-        </details>
-
-        <details id="watermarkDrop" class="asset-group" open>
-          <summary class="asset-summary" aria-label="Watermark asset">
-            <div class="asset-icon">WM</div>
-            <div class="asset-copy">
-              <strong id="watermarkAssetLabel"></strong>
-              <small id="watermarkAssetState">Not loaded</small>
-            </div>
-          </summary>
-          <div class="asset-body">
-            <div class="asset-actions">
-              <button id="watermarkFileButton" type="button"></button>
-              <button id="watermarkFolderButton" type="button"></button>
-            </div>
-            <input id="watermarkFileInput" type="file" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" hidden>
-            <input id="watermarkFolderInput" type="file" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" webkitdirectory directory multiple hidden>
-          </div>
-        </details>
+          <label class="asset-watermark-mode">
+            <input id="assetAsWatermark" type="checkbox">
+            <span id="assetAsWatermarkLabel"></span>
+          </label>
+          <input id="assetFileInput" type="file" accept=".png,.jpg,.jpeg,.webp,.gif,.mp3,.wav,.ogg,.m4a" multiple hidden>
+          <input id="assetFolderInput" type="file" webkitdirectory directory multiple hidden>
+          <ul class="asset-list" aria-live="polite">
+            <li class="asset-summary">
+              <div class="asset-icon" aria-hidden="true">IMG</div>
+              <div class="asset-copy">
+                <strong id="imageAssetLabel"></strong>
+                <small id="imageAssetState">Not loaded</small>
+              </div>
+            </li>
+            <li class="asset-summary">
+              <div class="asset-icon" aria-hidden="true">AUD</div>
+              <div class="asset-copy">
+                <strong id="audioAssetLabel"></strong>
+                <small id="audioAssetState">Not loaded</small>
+              </div>
+            </li>
+            <li class="asset-summary">
+              <div class="asset-icon" aria-hidden="true">WM</div>
+              <div class="asset-copy">
+                <strong id="watermarkAssetLabel"></strong>
+                <small id="watermarkAssetState">Not loaded</small>
+              </div>
+            </li>
+          </ul>
+        </section>
 
         <details class="collapsible-group" open>
           <summary id="projectSummary" class="collapsible-trigger"></summary>

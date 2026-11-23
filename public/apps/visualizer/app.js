@@ -67,7 +67,8 @@
     mp4Completed: { ja: "MP4変換が完了しました", en: "MP4 conversion completed" },
     mp4Unavailable: { ja: "このブラウザではMP4変換を利用できません。", en: "MP4 conversion is not available in this browser." },
     mp4Failed: { ja: "MP4変換に失敗しました。WebMは利用できます。", en: "MP4 conversion failed. The WebM output is still available." },
-    supportedFileMissing: { ja: "{source}: 対応する{kind}ファイルが見つかりません", en: "{source}: supported {kind} file not found" },
+    supportedFileMissing: { ja: "対応する画像または音声が見つかりません。", en: "No supported image or audio files found." },
+    importAsWatermark: { ja: "静止画像をウォーターマークとして読み込む", en: "Import still images as watermark" },
     importing: { ja: "{name} を読み込み中", en: "Importing {name}" },
     imageImported: { ja: "画像を読み込みました", en: "Image imported" },
     gifUnsupported: { ja: "このブラウザはGIFアニメの読み込みに対応していません。", en: "This browser does not support animated GIF decoding." },
@@ -313,21 +314,13 @@
     watermarkOpacityInput: document.getElementById("watermarkOpacityInput"),
     watermarkOpacityValue: document.getElementById("watermarkOpacityValue"),
     outputNameInput: document.getElementById("outputNameInput"),
-    imageDrop: document.getElementById("imageDrop"),
-    audioDrop: document.getElementById("audioDrop"),
-    watermarkDrop: document.getElementById("watermarkDrop"),
-    imageFileButton: document.getElementById("imageFileButton"),
-    imageFolderButton: document.getElementById("imageFolderButton"),
-    audioFileButton: document.getElementById("audioFileButton"),
-    audioFolderButton: document.getElementById("audioFolderButton"),
-    watermarkFileButton: document.getElementById("watermarkFileButton"),
-    watermarkFolderButton: document.getElementById("watermarkFolderButton"),
-    imageFileInput: document.getElementById("imageFileInput"),
-    imageFolderInput: document.getElementById("imageFolderInput"),
-    audioFileInput: document.getElementById("audioFileInput"),
-    audioFolderInput: document.getElementById("audioFolderInput"),
-    watermarkFileInput: document.getElementById("watermarkFileInput"),
-    watermarkFolderInput: document.getElementById("watermarkFolderInput"),
+    assetDrop: document.getElementById("assetDrop"),
+    assetFileButton: document.getElementById("assetFileButton"),
+    assetFolderButton: document.getElementById("assetFolderButton"),
+    assetFileInput: document.getElementById("assetFileInput"),
+    assetFolderInput: document.getElementById("assetFolderInput"),
+    assetAsWatermark: document.getElementById("assetAsWatermark"),
+    assetAsWatermarkLabel: document.getElementById("assetAsWatermarkLabel"),
     imageAssetState: document.getElementById("imageAssetState"),
     audioAssetState: document.getElementById("audioAssetState"),
     watermarkAssetState: document.getElementById("watermarkAssetState")
@@ -447,12 +440,9 @@
     els.imageAssetLabel.textContent = t("stillImage");
     els.audioAssetLabel.textContent = t("audioTrack");
     els.watermarkAssetLabel.textContent = t("watermarkIcon");
-    els.imageFileButton.textContent = t("file");
-    els.imageFolderButton.textContent = t("folder");
-    els.audioFileButton.textContent = t("file");
-    els.audioFolderButton.textContent = t("folder");
-    els.watermarkFileButton.textContent = t("file");
-    els.watermarkFolderButton.textContent = t("folder");
+    els.assetFileButton.textContent = t("file");
+    els.assetFolderButton.textContent = t("folder");
+    els.assetAsWatermarkLabel.textContent = t("importAsWatermark");
     els.projectSummary.textContent = t("project");
     els.timelineSilentButton.textContent = t("silentDuration");
     els.timelineAudioButton.textContent = t("fullAudioLength");
@@ -609,34 +599,19 @@
   }
 
   function bindAssets() {
-    bindAssetInput("image");
-    bindAssetInput("audio");
-    bindAssetInput("watermark");
-    bindDropZone(els.imageDrop, "image");
-    bindDropZone(els.audioDrop, "audio");
-    bindDropZone(els.watermarkDrop, "watermark");
+    els.assetFileButton.addEventListener("click", () => els.assetFileInput.click());
+    els.assetFolderButton.addEventListener("click", () => els.assetFolderInput.click());
+    for (const input of [els.assetFileInput, els.assetFolderInput]) {
+      input.addEventListener("change", () => {
+        importAssets(Array.from(input.files)).catch(error => setStatus(error.message));
+        input.value = "";
+      });
+    }
+    bindDropZone(els.assetDrop);
     window.addEventListener("paste", onWindowPaste);
   }
 
-  function bindAssetInput(kind) {
-    const fileButton = els[`${kind}FileButton`];
-    const folderButton = els[`${kind}FolderButton`];
-    const fileInput = els[`${kind}FileInput`];
-    const folderInput = els[`${kind}FolderInput`];
-
-    fileButton.addEventListener("click", () => fileInput.click());
-    folderButton.addEventListener("click", () => folderInput.click());
-    fileInput.addEventListener("change", (event) => {
-      importFirstSupported(kind, Array.from(event.currentTarget.files || []), "File");
-      event.currentTarget.value = "";
-    });
-    folderInput.addEventListener("change", (event) => {
-      importFirstSupported(kind, Array.from(event.currentTarget.files || []), "Folder");
-      event.currentTarget.value = "";
-    });
-  }
-
-  function bindDropZone(zone, kind) {
+  function bindDropZone(zone) {
     zone.addEventListener("dragenter", (event) => {
       event.preventDefault();
       zone.classList.add("is-drag-over");
@@ -649,8 +624,11 @@
     zone.addEventListener("drop", async (event) => {
       event.preventDefault();
       zone.classList.remove("is-drag-over");
-      const files = await filesFromDrop(event);
-      importFirstSupported(kind, files, "Drop");
+      try {
+        await importAssets(await filesFromDrop(event));
+      } catch (error) {
+        setStatus(error.message);
+      }
     });
   }
 
@@ -840,14 +818,18 @@
     els.workspace.style.setProperty("--right-panel-width", `${state.rightPanelWidth}px`);
   }
 
-  async function importFirstSupported(kind, files, source) {
-    const file = firstAcceptedFile(kind, files);
-    if (!file) {
-      const kindLabel = kind === "image" ? t("image") : kind === "audio" ? t("audio") : t("watermarkKind");
-      setStatus(t("supportedFileMissing", { source, kind: kindLabel }));
+  async function importAssets(files) {
+    if (!files.length) return;
+    const selected = new Map();
+    for (const file of files) {
+      const kind = assetKind(file, els.assetAsWatermark.checked);
+      if (kind && !selected.has(kind)) selected.set(kind, file);
+    }
+    if (!selected.size) {
+      setStatus(t("supportedFileMissing"));
       return;
     }
-    await importAsset(kind, file);
+    for (const [kind, file] of selected) await importAsset(kind, file);
   }
 
   async function importAsset(kind, file) {
@@ -861,6 +843,9 @@
           state.urls.image = URL.createObjectURL(file);
           state.media.image = await loadImage(state.urls.image);
         }
+      } else if (kind === "watermark") {
+        state.urls.watermark = URL.createObjectURL(file);
+        state.media.watermark = await loadImage(state.urls.watermark);
       }
     } catch (error) {
       revokeAsset(kind);
@@ -874,26 +859,22 @@
       size: file.size,
       type: file.type
     };
-    if (kind !== "image") {
+    if (kind === "audio") {
       state.urls[kind] = URL.createObjectURL(file);
     }
 
     if (kind === "image") {
       state.project.imageTransform = { zoom: 1, offsetX: 0, offsetY: 0 };
-      els.imageDrop.open = false;
     } else if (kind === "audio") {
       state.media.audio = file;
       state.project.export.outputName = outputNameForAudioFile(file.name);
       els.audioElement.src = state.urls.audio;
       els.audioElement.load();
-      els.audioDrop.open = false;
       if (state.project.timeline.mode === "audio_full_length") {
         await waitForAudioMetadata();
       }
     } else {
-      state.media.watermark = await loadImage(state.urls.watermark);
       state.project.watermark.enabled = true;
-      els.watermarkDrop.open = false;
     }
 
     if (kind === "audio") {
@@ -951,19 +932,8 @@
   function onWindowPaste(event) {
     const files = Array.from(event.clipboardData.files || []);
     if (!files.length) return;
-    const imageFile = firstAcceptedFile("image", files);
-    const audioFile = firstAcceptedFile("audio", files);
-    const watermarkFile = firstAcceptedFile("watermark", files);
-    if (audioFile) {
-      event.preventDefault();
-      importAsset("audio", audioFile);
-    } else if (imageFile) {
-      event.preventDefault();
-      importAsset("image", imageFile);
-    } else if (watermarkFile) {
-      event.preventDefault();
-      importAsset("watermark", watermarkFile);
-    }
+    event.preventDefault();
+    importAssets(files).catch(error => setStatus(error.message));
   }
 
   async function filesFromDrop(event) {
@@ -997,11 +967,17 @@
     return nested.flat();
   }
 
-  function firstAcceptedFile(kind, files) {
-    return files.find((file) => {
-      const lower = file.name.toLowerCase();
-      return ACCEPTED_EXTENSIONS[kind].some((extension) => lower.endsWith(extension));
-    });
+  function assetKind(file, asWatermark) {
+    const name = file.name.toLowerCase();
+    const dot = name.lastIndexOf(".");
+    const extension = dot < 0 ? "" : name.slice(dot);
+    if (ACCEPTED_EXTENSIONS.audio.includes(extension)) return "audio";
+    if (!ACCEPTED_EXTENSIONS.image.includes(extension)) return null;
+    if (ACCEPTED_EXTENSIONS.watermark.includes(extension)
+      && (asWatermark || /watermark|logo|透かし/.test(name.slice(0, dot)))) {
+      return "watermark";
+    }
+    return "image";
   }
 
   function selectedAspectId() {
@@ -1161,15 +1137,13 @@
   }
 
   function updateAssetStates() {
-    const imageLoaded = Boolean(state.assets.image);
-    const audioLoaded = Boolean(state.assets.audio);
-    const watermarkLoaded = Boolean(state.assets.watermark);
-    els.imageAssetState.textContent = imageLoaded ? t("loaded") : t("notLoaded");
-    els.audioAssetState.textContent = audioLoaded ? t("loaded") : t("notLoaded");
-    els.watermarkAssetState.textContent = watermarkLoaded ? t("loaded") : t("notLoaded");
-    els.imageAssetState.classList.toggle("is-loaded", imageLoaded);
-    els.audioAssetState.classList.toggle("is-loaded", audioLoaded);
-    els.watermarkAssetState.classList.toggle("is-loaded", watermarkLoaded);
+    for (const kind of ["image", "audio", "watermark"]) {
+      const name = state.assets[kind]?.originalName || "";
+      const label = els[`${kind}AssetState`];
+      label.textContent = name || t("notLoaded");
+      label.title = name;
+      label.classList.toggle("is-loaded", Boolean(name));
+    }
   }
 
   function readWatermarkBounds(width, height) {
